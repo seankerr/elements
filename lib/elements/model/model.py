@@ -508,8 +508,7 @@ class Date (Field):
             if type(value) == datetime.date:
                 return (True, value)
 
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self._regex.match(value):
                 return (True, datetime.date(int(value[0:4]), int(value[5:7]), int(value[8:10])))
@@ -564,8 +563,7 @@ class Datetime (Field):
             if type(value) == datetime.datetime:
                 return (True, value)
 
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self._regex.match(value):
                 if len(value) > 16:
@@ -626,8 +624,7 @@ class Domain (Field):
         """
 
         try:
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self._regex.match(value):
                 return (True, value)
@@ -681,8 +678,7 @@ class Email (Field):
         """
 
         try:
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self._regex.match(value):
                 return (True, value)
@@ -918,6 +914,10 @@ class Int (Field):
 
 class IPAddress (Field):
 
+    _regex = "(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)"
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def __init__ (self, name, *args, **kwargs):
         """
         Create a new IPAddress instance.
@@ -949,23 +949,9 @@ class IPAddress (Field):
         """
 
         try:
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
-            ip = value.split(".")
-
-            if len(ip) == 4:
-                for i, sub in enumerate(ip):
-                    if type(sub) != int:
-                        sub = int(sub)
-
-                    if i in (0, 3):
-                        if sub < 1 or sub > 255:
-                            raise Exception()
-
-                    elif sub < 0 or sub > 255:
-                        raise Exception()
-
+            if self._regex.match(value):
                 return (True, value)
 
         except:
@@ -1016,8 +1002,7 @@ class Money (Float):
         """
 
         try:
-            if type(value) != float:
-                value = float(value)
+            value = float(value)
 
             return (True, float("%.2f" % (value + 0.001)))
 
@@ -1217,8 +1202,7 @@ class Time (Field):
             if type(value) == datetime.time:
                 return (True, value)
 
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self._regex.match(value):
                 if len(value) > 5:
@@ -1289,8 +1273,7 @@ class URL (Field):
         """
 
         try:
-            if type(value) != str:
-                value = str(value)
+            value = str(value)
 
             if self.regex.match(value.lower()):
                 return (True, value)
