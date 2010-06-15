@@ -796,9 +796,6 @@ class Float (Field):
                         field value, and the third part is the error message.
         """
 
-        if type(value) == float:
-            return (True, value)
-
         try:
             return (True, float(value))
 
@@ -908,9 +905,6 @@ class Int (Field):
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
                         field value, and the third part is the error message.
         """
-
-        if type(value) == int:
-            return (True, value)
 
         try:
             return (True, int(value))
@@ -1174,9 +1168,6 @@ class Text (Field):
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
                         field value, and the third part is the error message.
         """
-
-        if type(value) == str:
-            return (True, value)
 
         try:
             return (True, str(value))
