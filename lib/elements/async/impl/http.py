@@ -579,7 +579,7 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def set_cookie (self, name, value = "", expires = None, path = "/", domain = None, is_secure = False):
+    def set_cookie (self, name, value="", expires=None, path="/", domain=None, http_only=False, secure=False):
         """
         Set a cookie.
 
@@ -588,7 +588,8 @@ class HttpClient (Client):
         @param expires   (datetime) The date and time at which the cookie will expire.
         @param path      (str)      The root path under which the cookie will be valid.
         @param domain    (str)      The domain under which the cookie will be valid.
-        @param is_secure (bool)     Indicates that the cookie will only be transmitted over an HTTP connection.
+        @param http_only (bool)     Indicates that the cookie will not accessible from client script.
+        @param secure    (bool)     Indicates that the cookie will only be transmitted over an HTTP connection.
         """
 
         cookie = name + "=" + urllib.quote(value) + "; path=" + path
@@ -599,6 +600,12 @@ class HttpClient (Client):
         if expires:
             cookie += "; expires=" + datetime.datetime.fromtimestamp(time.time() + expires) \
                                              .strftime("%A, %d %B %Y %H:%M:%S GMT" + self._server._gmt_offset)
+
+        if http_only:
+            cookie += "; HttpOnly"
+
+        if secure:
+            cookie += "; secure"
 
         self.out_cookies[name] = cookie        
 
