@@ -592,7 +592,7 @@ class HttpClient (Client):
         @param secure    (bool)     Indicates that the cookie will only be transmitted over an HTTP connection.
         """
 
-        cookie = name + "=" + urllib.quote(value) + "; path=" + path
+        cookie = name + "=" + urllib.quote(str(value)) + "; path=" + path
 
         if domain:
             cookie += "; domain=" + domain
