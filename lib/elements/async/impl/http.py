@@ -642,8 +642,8 @@ class HttpServer (Server):
         """
         This callback is executed when an uncaught exception is found while processing a client.
 
-        @param exception (Exception) The exception.
-        @param client   (HttpClient) The HttpClient instance that was active during the exception.
+        @param exception (Exception)  The exception.
+        @param client    (HttpClient) The HttpClient instance that was active during the exception.
         """
 
         Server.handle_exception(self, exception)
