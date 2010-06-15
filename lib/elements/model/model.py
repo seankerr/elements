@@ -719,7 +719,7 @@ class Float (Field):
         if "min" in kwargs and kwargs["min"]:
             self.min_val = kwargs["min"]
 
-            if type(self.min_val) == int or type(self.min_val) == float:
+            if type(self.min_val) in (int, float):
                 if "min_err" in kwargs:
                     self.min_err = kwargs["min_err"]
 
@@ -735,7 +735,7 @@ class Float (Field):
         if "max" in kwargs and kwargs["max"]:
             self.max_val = kwargs["max"]
 
-            if type(self.max_val) == int or type(self.max_val) == float:
+            if type(self.max_val) in (int, float):
                 if "max_err" in kwargs:
                     self.max_err = kwargs["max_err"]
 
