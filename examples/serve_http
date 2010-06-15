@@ -1,0 +1,75 @@
+#!/usr/bin/env python
+#
+# This file is part of Elements.
+# Copyright (c) 2010 Sean Kerr. All rights reserved.
+#
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
+# Author:  Sean Kerr <sean@code-box.org>
+# Version: $Id$
+
+import os
+import sys
+
+sys.path.append(os.path.abspath("../lib"))
+
+from elements.async.impl.http import HttpClient
+from elements.async.impl.http import HttpServer
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ExampleClient (HttpClient):
+
+    def handle_dispatch (self):
+        """
+        Dispatch the request, which for all intents and purposes of this example just dumps information about the
+        request.
+        """
+
+        self.compose_headers()
+
+        self.write("<h1>Welcome to ExampleServer</h1>")
+        self.write("<h3>In Headers</h3>")
+        
+        for header in self.in_headers.items():
+            self.write("%s: <span style=\"color: #F00\">%s</span><br>" % header)
+
+        self.write("<h3>Out Headers</h3>")
+        
+        for header in self.out_headers.items():
+            self.write("%s: <span style=\"color: #F00\">%s</span><br>" % header)
+
+        self.write("<h3>Cookies</h3>")
+        
+        for cookie in self.in_cookies.items():
+            self.write("%s: <span style=\"color: #F00\">%s</span><br>" % cookie)
+
+        self.write("<h3>Parameters</h3>")
+        
+        for param in self.params.items():
+            self.write("%s: <span style=\"color: #F00\">%s</span><br>" % param)
+
+        self.write("<h3>Files</h3>")
+
+        if self.files:
+            for file in self.files.items():
+                self.write("%s: <span style=\"color: #F00\">%s</span><br>" % file)
+            
+        self.write("<h3>Pid: <span style=\"color: #F00\">%d</span></h3>" % os.getpid())
+        self.flush()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ExampleServer (HttpServer):
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new ExampleClient instance.
+        """
+
+        self.register_client(ExampleClient(client_socket, client_address, self, server_address))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# start the server
+ExampleServer(hosts=[("0.0.0.0", 8080)]).start()
