@@ -227,7 +227,7 @@ class Model:
         """
         Validate all model field values.
 
-        @return (bool) True, if validation succeeds, otherwise False.
+        @return (bool) True, if validation succeeded, otherwise False.
         """
 
         # validate groups
@@ -276,7 +276,7 @@ class Model:
         """
         Retrieve all model values.
 
-        @return (dict) The key/value pairs.
+        @return (dict) The field name/value pairs.
         """
 
         return self.__dict__["_values"]
@@ -470,7 +470,7 @@ class Boolean (Field):
 
 class Date (Field):
 
-    __regex = re.compile("^(\d{4}(?P<sep1>-|/)\d{2}(?P=sep1)\d{2}|\d{2}(?P<sep2>-|/)\d{2}(?P=sep2)\d{4})$")
+    _regex = re.compile("^(\d{4}(?P<sep1>-|/)\d{2}(?P=sep1)\d{2}|\d{2}(?P<sep2>-|/)\d{2}(?P=sep2)\d{4})$")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -511,7 +511,7 @@ class Date (Field):
             if type(value) != str:
                 value = str(value)
 
-            if self.__regex.match(value):
+            if self._regex.match(value):
                 return (True, datetime.date(int(value[0:4]), int(value[5:7]), int(value[8:10])))
 
         except:
@@ -525,8 +525,8 @@ class Date (Field):
 
 class Datetime (Field):
 
-    __regex = re.compile("^(\d{4}(?P<sep1>-|/)\d{2}(?P=sep1)\d{2}|\d{2}(?P<sep2>-|/)\d{2}(?P=sep2)\d{4}) \d{2}:\d{2}(" \
-                         ":\d{2})?$")
+    _regex = re.compile("^(\d{4}(?P<sep1>-|/)\d{2}(?P=sep1)\d{2}|\d{2}(?P<sep2>-|/)\d{2}(?P=sep2)\d{4}) \d{2}:\d{2}(" \
+                        ":\d{2})?$")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -567,7 +567,7 @@ class Datetime (Field):
             if type(value) != str:
                 value = str(value)
 
-            if self.__regex.match(value):
+            if self._regex.match(value):
                 if len(value) > 16:
                     return (True, datetime.datetime(int(value[0:4]), int(value[5:7]), int(value[8:10]),
                                                     int(value[11:13]), int(value[14:16]), int(value[17:19])))
@@ -586,12 +586,12 @@ class Datetime (Field):
 
 class Domain (Field):
 
-    __regex = re.compile("^([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+((a[cdefgilmnoqrstuwxz]|aero|arpa)|(b[abdefghijmnorstvw" \
-                         "yz]|biz)|(c[acdfghiklmnorsuvxyz]|cat|com|coop)|d[ejkmoz]|(e[ceghrstu]|edu)|f[ijkmor]|(g[abd" \
-                         "efghilmnpqrstuwy]|gov)|h[kmnrtu]|(i[delmnoqrst]|info|int)|(j[emop]|jobs)|k[eghimnprwyz]|l[a" \
-                         "bcikrstuvy]|(m[acdghklmnopqrstuvwxyz]|mil|mobi|museum)|(n[acefgilopruz]|name|net)|(om|org)|" \
-                         "(p[aefghklmnrstwy]|pro)|qa|r[eouw]|s[abcdeghijklmnortvyz]|(t[cdfghjklmnoprtvwz]|travel)|u[a" \
-                         "gkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw])$")
+    _regex = re.compile("^([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+((a[cdefgilmnoqrstuwxz]|aero|arpa)|(b[abdefghijmnorstvw" \
+                        "yz]|biz)|(c[acdfghiklmnorsuvxyz]|cat|com|coop)|d[ejkmoz]|(e[ceghrstu]|edu)|f[ijkmor]|(g[abd" \
+                        "efghilmnpqrstuwy]|gov)|h[kmnrtu]|(i[delmnoqrst]|info|int)|(j[emop]|jobs)|k[eghimnprwyz]|l[a" \
+                        "bcikrstuvy]|(m[acdghklmnopqrstuvwxyz]|mil|mobi|museum)|(n[acefgilopruz]|name|net)|(om|org)|" \
+                        "(p[aefghklmnrstwy]|pro)|qa|r[eouw]|s[abcdeghijklmnortvyz]|(t[cdfghjklmnoprtvwz]|travel)|u[a" \
+                        "gkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw])$")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -629,7 +629,7 @@ class Domain (Field):
             if type(value) != str:
                 value = str(value)
 
-            if self.__regex.match(value):
+            if self._regex.match(value):
                 return (True, value)
 
         except:
@@ -643,10 +643,10 @@ class Domain (Field):
 
 class Email (Field):
 
-    __regex = re.compile("^(?:[a-z0-9!\#$%*\/?|^{}`~&\'+=_.-]+|\"(?:(?:\\\\\\\\)*\\\\\"|[^\\\\\"]+)*\")@(?:(?:(?:25[0" \
-                         "-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-z0" \
-                         "-9]+)(?:[a-z0-9-]*[a-z0-9])*\.)+(?:arpa|com|edu|gov|int|mil|net|org|biz|info|name|pro|aero|" \
-                         "coop|museum|travel|tel|mobi|jobs|[a-z]{2}))$")
+    _regex = re.compile("^(?:[a-z0-9!\#$%*\/?|^{}`~&\'+=_.-]+|\"(?:(?:\\\\\\\\)*\\\\\"|[^\\\\\"]+)*\")@(?:(?:(?:25[0" \
+                        "-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[a-z0" \
+                        "-9]+)(?:[a-z0-9-]*[a-z0-9])*\.)+(?:arpa|com|edu|gov|int|mil|net|org|biz|info|name|pro|aero|" \
+                        "coop|museum|travel|tel|mobi|jobs|[a-z]{2}))$")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -684,7 +684,7 @@ class Email (Field):
             if type(value) != str:
                 value = str(value)
 
-            if self.__regex.match(value):
+            if self._regex.match(value):
                 return (True, value)
 
         except:
@@ -1190,7 +1190,7 @@ class Text (Field):
 
 class Time (Field):
 
-    __regex = re.compile("^\d{2}:\d{2}(:\d{2})?$")
+    _regex = re.compile("^\d{2}:\d{2}(:\d{2})?$")
 
     def __init__ (self, name, *args, **kwargs):
         """
@@ -1229,7 +1229,7 @@ class Time (Field):
             if type(value) != str:
                 value = str(value)
 
-            if self.__regex.match(value):
+            if self._regex.match(value):
                 if len(value) > 5:
                     return (True, datetime.time(int(value[0:2]), int(value[3:5]), int(value[6:8])))
 
@@ -1246,12 +1246,12 @@ class Time (Field):
 
 class URL (Field):
 
-    __regex = "://([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+((a[cdefgilmnoqrstuwxz]|aero|arpa)|(b[abdefghijmnorstvwyz]|biz)|" \
-              "(c[acdfghiklmnorsuvxyz]|cat|com|coop)|d[ejkmoz]|(e[ceghrstu]|edu)|f[ijkmor]|(g[abdefghilmnpqrstuwy]|go" \
-              "v)|h[kmnrtu]|(i[delmnoqrst]|info|int)|(j[emop]|jobs)|k[eghimnprwyz]|l[abcikrstuvy]|(m[acdghklmnopqrstu" \
-              "vwxyz]|mil|mobi|museum)|(n[acefgilopruz]|name|net)|(om|org)|(p[aefghklmnrstwy]|pro)|qa|r[eouw]|s[abcde" \
-              "ghijklmnortvyz]|(t[cdfghjklmnoprtvwz]|travel)|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw])(/[\\x20-\\x7E" \
-              "]+)?$"
+    _regex = "://([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+((a[cdefgilmnoqrstuwxz]|aero|arpa)|(b[abdefghijmnorstvwyz]|biz)|" \
+             "(c[acdfghiklmnorsuvxyz]|cat|com|coop)|d[ejkmoz]|(e[ceghrstu]|edu)|f[ijkmor]|(g[abdefghilmnpqrstuwy]|go" \
+             "v)|h[kmnrtu]|(i[delmnoqrst]|info|int)|(j[emop]|jobs)|k[eghimnprwyz]|l[abcikrstuvy]|(m[acdghklmnopqrstu" \
+             "vwxyz]|mil|mobi|museum)|(n[acefgilopruz]|name|net)|(om|org)|(p[aefghklmnrstwy]|pro)|qa|r[eouw]|s[abcde" \
+             "ghijklmnortvyz]|(t[cdfghjklmnoprtvwz]|travel)|u[agkmsyz]|v[aceginu]|w[fs]|y[etu]|z[amw])(/[\\x20-\\x7E" \
+             "]+)?$"
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1279,7 +1279,7 @@ class URL (Field):
                 protocols = (protocol,)
 
         # compile custom pattern
-        self.regex = re.compile("^(" + "|".join(protocols).lower() + ")" + self.__regex)
+        self.regex = re.compile("^(" + "|".join(protocols).lower() + ")" + self._regex)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
