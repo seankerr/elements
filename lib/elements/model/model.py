@@ -6,7 +6,10 @@
 # Author:  Sean Kerr <sean@code-box.org>
 # Version: $Id$
 
-import copy, datetime, new, re
+import copy
+import datetime
+import new
+import re
 
 import settings
 
