@@ -340,4 +340,3 @@ class SelectEventManager (EventManager):
         self._error_filenos.discard(fileno)
         self._read_filenos.discard(fileno)
         self._write_filenos.discard(fileno)
-# Version: $Id$
