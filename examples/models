@@ -56,6 +56,7 @@ print
 class ExampleModel (Model):
 
     address  = Text("Address", required=False, group="location")
+    city     = Text("City", required=False, group="location")
     country  = Text("Country", required=False, group="location")
     email    = Email("Email address")
     password = Text("Password", min=8, max=50, min_err="Too short! Min is %3", max_err="Too long! Max is %3")
@@ -72,6 +73,25 @@ model.email    = "just4fun@domain.org"
 model.password = "password"
 model.username = "Just4Fun"
 model.zipcode  = "90210"
+
+print "Validated:", model.validate()
+print "Errors:", model.errors()
+print "Values:", model.values()
+print
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# you can also load data into the model from the constructor
+values = { "address":  "911 Is A Joke In",
+           "city":     "Your Town",
+           "country":  "United States",
+           "email":    "just4fun@domain.org",
+           "password": "password",
+           "state":    "California",
+           "username": "Just4Fun",
+           "zipcode":  "90210" }
+
+model = ExampleModel(**values)
 
 print "Validated:", model.validate()
 print "Errors:", model.errors()
