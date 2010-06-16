@@ -8,4 +8,71 @@
 # Author:  Sean Kerr <sean@code-box.org>
 # Version: $Id$
 
+import os
+import sys
 
+sys.path.append(os.path.abspath("../lib"))
+
+from elements.model.model import Email
+from elements.model.model import Model
+from elements.model.model import Text
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# a quick example with nothing fancy
+class ExampleModel (Model):
+
+    password = Text("Password", min=8, max=50)
+    username = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$")
+
+model = ExampleModel()
+model.password = "pass"
+model.username = "4Fun"
+
+print "Validated:", model.validate()
+print "Errors:", model.errors()
+print
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# a better example of a model with custom error messages
+class ExampleModel (Model):
+
+    password = Text("Password", min=8, max=50, min_err="Too short! Min is %3", max_err="Too long! Max is %3")
+    username = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$", regex_err="Invalid username format")
+
+model = ExampleModel()
+model.password = "password"
+model.username = "Just4Fun"
+
+print "Validated:", model.validate()
+print "Errors:", model.errors()
+print
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# an even better example using groups which allow you to conditionally apply requirements
+# the group says if any of the location values are entered into the model, then the rest are also required
+class ExampleModel (Model):
+
+    address  = Text("Address", required=False, group="location")
+    country  = Text("Country", required=False, group="location")
+    email    = Email("Email address")
+    password = Text("Password", min=8, max=50, min_err="Too short! Min is %3", max_err="Too long! Max is %3")
+    state    = Text("State", required=False, group="location")
+    username = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$", regex_err="Invalid username format")
+    zipcode  = Text("Zipcode", required=False, group="location")
+
+    def group_location (self):
+
+        return self.address or self.country or self.state or self.zipcode
+
+model = ExampleModel()
+model.email    = "just4fun@domain.org"
+model.password = "password"
+model.username = "Just4Fun"
+model.zipcode  = "90210"
+
+print "Validated:", model.validate()
+print "Errors:", model.errors()
+print "Values:", model.values()
