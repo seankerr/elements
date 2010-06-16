@@ -25,7 +25,7 @@ class ExampleModel (Model):
     password = Text("Password", min=8, max=50)
     username = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$")
 
-model = ExampleModel()
+model          = ExampleModel()
 model.password = "pass"
 model.username = "4Fun"
 
@@ -41,7 +41,7 @@ class ExampleModel (Model):
     password = Text("Password", min=8, max=50, min_err="Too short! Min is %3", max_err="Too long! Max is %3")
     username = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$", regex_err="Invalid username format")
 
-model = ExampleModel()
+model          = ExampleModel()
 model.password = "password"
 model.username = "Just4Fun"
 
@@ -67,7 +67,7 @@ class ExampleModel (Model):
 
         return self.address or self.country or self.state or self.zipcode
 
-model = ExampleModel()
+model          = ExampleModel()
 model.email    = "just4fun@domain.org"
 model.password = "password"
 model.username = "Just4Fun"
