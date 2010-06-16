@@ -19,7 +19,7 @@ from elements.model.model    import Int
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def connection (name = "default"):
+def connection (name="default"):
     """
     Retrieve a database connection.
 
@@ -318,7 +318,7 @@ class DatabaseModel:
     # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def filter (cls, filters, query_type = "AND"):
+    def filter (cls, filters, query_type="AND"):
         """
         Retrieve a list of filtered records for this model.
 
@@ -331,7 +331,7 @@ class DatabaseModel:
     # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def get (cls, id, connection = None):
+    def get (cls, id, connection=None):
         """
         Retrieve a database record for this model.
 
@@ -476,7 +476,7 @@ class DatabaseModel:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def validate (self, validate_keys = True):
+    def validate (self, validate_keys=True):
         """
         Validate all model field values.
 
@@ -567,7 +567,7 @@ class DatabaseModel:
 
 class DatabaseModelQuery:
 
-    def __init__ (self, cls, filters, query_type = "AND"):
+    def __init__ (self, cls, filters, query_type="AND"):
         """
         Create a new DatabaseModelQuery instance.
         
@@ -657,7 +657,7 @@ class DatabaseModelQuery:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __call__ (self, convert = True):
+    def __call__ (self, convert=True):
         """
         Execute the query.
 
