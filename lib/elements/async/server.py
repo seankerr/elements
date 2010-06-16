@@ -1,6 +1,8 @@
 # This file is part of Elements.
 # Copyright (c) 2010 Sean Kerr. All rights reserved.
 #
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
 # Author:  Sean Kerr <sean@code-box.org>
 # Version: $Id$
 
@@ -457,10 +459,10 @@ class Server:
 
         # initialization from worker perspective
         try:
+            self._channels     = {}
             self._clients      = {}
             self._is_listening = False
             self._is_parent    = False
-            self._channels     = {}
 
             # initialize the event manager
             self._event_manager            = self._event_manager.__class__(self)
