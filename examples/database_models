@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+#
+# This file is part of Elements.
+# Copyright (c) 2010 Sean Kerr. All rights reserved.
+#
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
+# Author:  Sean Kerr <sean@code-box.org>
+# Version: $Id$
+
+import os
+import sys
+
+sys.path.append(os.path.abspath("../lib"))
+
+from elements.model.database import DatabaseModel
+from elements.model.model    import Email
+from elements.model.model    import Int
+from elements.model.model    import Model
+from elements.model.model    import Text
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class ExampleModel (Model):
+
+    example_id = Int("ID")
+    password   = Text("Password", min=8, max=50)
+    username   = Text("Username", regex="^[a-zA-Z][a-zA-Z0-9]{1,24}$")
+
+class ExampleDBModel (DatabaseModel):
+
+    model = ExampleModel
+    table = "example"
+
+# create a new example model instance
+model          = ExampleDBModel()
+model.password = "fancy p@$$w0rD"
+model.username = "Just4Fun"
+
+print "Validated:", model.validate()
+print "Errors:", model.errors()
+
+# save the model
+model.save()
+
+# filter records
+model = ExampleDBModel.filter([["username", "Just4Fun"]])()
+
+for model in model:
+    # show the model fields and values
+    print model.values()
+
+    # delete the model
+    model.delete()
