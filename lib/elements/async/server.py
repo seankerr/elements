@@ -3,8 +3,7 @@
 #
 # The full license is available in the LICENSE file that was distributed with this source code.
 #
-# Author:  Sean Kerr <sean@code-box.org>
-# Version: $Id$
+# Author: Sean Kerr <sean@code-box.org>
 
 try:
     from fcntl import fcntl   as fcntl_func

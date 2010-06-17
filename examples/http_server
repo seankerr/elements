@@ -5,8 +5,7 @@
 #
 # The full license is available in the LICENSE file that was distributed with this source code.
 #
-# Author:  Sean Kerr <sean@code-box.org>
-# Version: $Id$
+# Author: Sean Kerr <sean@code-box.org>
 
 import os
 import sys
@@ -26,6 +25,18 @@ class ExampleClient (HttpClient):
         request.
         """
 
+        # set example cookie
+        if "request_count" in self.in_cookies:
+            request_count = int(self.in_cookies["request_count"])
+
+        else:
+            request_count = 0
+
+        request_count += 1
+
+        self.set_cookie("request_count", request_count)
+
+        # compose the response
         self.compose_headers()
 
         self.write("<h1>Welcome to ExampleServer</h1>")
@@ -56,6 +67,8 @@ class ExampleClient (HttpClient):
                 self.write("%s: <span style=\"color: #F00\">%s</span><br>" % file)
             
         self.write("<h3>Pid: <span style=\"color: #F00\">%d</span></h3>" % os.getpid())
+
+        # flush the response
         self.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
