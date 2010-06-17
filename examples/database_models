@@ -44,7 +44,7 @@ print "Errors:", model.errors()
 model.save()
 
 # filter records
-model = ExampleDBModel.filter([["username", "Just4Fun"]])()
+model = ExampleDBModel.filter([["username", "=", "Just4Fun"]])()
 
 for model in model:
     # show the model fields and values
