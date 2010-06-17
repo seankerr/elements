@@ -595,25 +595,14 @@ class DatabaseModelQuery:
         self._values     = []
 
         for i, filter in enumerate(filters):
-            filter_length = len(filter)
-
-            if type(filter) not in (tuple, list) or filter_length not in (2, 3, 4):
-                raise DatabaseModelException("Filter must be a tuple/list with 2 to 4 entries (field, [operator,] " \
-                                             "value [, wrap])")
-
-            if filter[0] not in cls.Meta.model.Meta.fields:
-                raise ModelException("%s does not contain field %s" % (cls.Meta.model.__name__, filter[0]))
+            if type(filter) not in (tuple, list) or len(filter) not in (3, 4):
+                raise DatabaseModelException("Filter must be a tuple/list with 3 or 4 entries (field, operator, " \
+                                             "value[, wrap])")
 
             if i > 0:
                 self._query += self._query_type
 
-            if filter_length == 2:
-                field    = filter[0]
-                operator = "="
-                value    = filter[1]
-                wrap     = None
-
-            elif filter_length == 3:
+            if len(filter) == 3:
                 field    = filter[0]
                 operator = filter[1]
                 value    = filter[2]
