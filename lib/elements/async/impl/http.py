@@ -589,8 +589,8 @@ class HttpClient (Client):
         @param expires   (datetime) The date and time at which the cookie will expire.
         @param path      (str)      The root path under which the cookie will be valid.
         @param domain    (str)      The domain under which the cookie will be valid.
-        @param http_only (bool)     Indicates that the cookie will not accessible from client script.
-        @param secure    (bool)     Indicates that the cookie will only be transmitted over an HTTP connection.
+        @param http_only (bool)     Indicates that the cookie will not be accessible from client script.
+        @param secure    (bool)     Indicates that the cookie will only be transmitted over an HTTPS connection.
         """
 
         cookie = name + "=" + urllib.quote(str(value)) + "; path=" + path
