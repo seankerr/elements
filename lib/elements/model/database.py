@@ -634,9 +634,16 @@ class DatabaseModelQuery:
                     self._query += (" %s NOT IN (" % field) + ",".join(ins) + ")"
 
             elif wrap:
-                self._query += " %s(%s) %s %s(%s)" % (wrap, field, operator, wrap, "%s")
+                if type(value) == str and value.startswith("@"):
+                    self._query += " %s(%s) %s %s(%s)" % (wrap, field, operator, wrap, value[1:])
 
-                self._values.append(value)
+                else:
+                    self._query += " %s(%s) %s %s(%s)" % (wrap, field, operator, wrap, "%s")
+
+                    self._values.append(value)
+
+            elif type(value) == str and value.startswith("@"):
+                self._query += " %s %s %s" % (field, operator, value[1:])
 
             else:
                 self._query += " %s %s %s" % (field, operator, "%s")
