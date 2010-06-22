@@ -26,13 +26,7 @@ class ExampleClient (HttpClient):
         """
 
         # set example cookie
-        if "request_count" in self.in_cookies:
-            request_count = int(self.in_cookies["request_count"])
-
-        else:
-            request_count = 0
-
-        request_count += 1
+        request_count = int(self.in_cookies.get("request_count", 0)) + 1
 
         self.set_cookie("request_count", request_count)
 
