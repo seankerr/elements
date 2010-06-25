@@ -46,8 +46,6 @@ def init ():
         for name, data in settings.databases.items():
             data = copy.copy(data)
 
-            settings.databases[name]["tried"] = True
-
             if "api" not in data:
                 raise DatabaseModelException("Database %s is missing api setting" % name)
 
