@@ -44,9 +44,6 @@ def init ():
 
     try:
         for name, data in settings.databases.items():
-            if "tried" in data:
-                continue
-
             data = copy.copy(data)
 
             settings.databases[name]["tried"] = True
@@ -125,9 +122,9 @@ class DatabaseModelMetaclass (type):
 
         # check database pool
         if not DatabaseModelMetaclass.__POOL_INIT:
-            DatabaseModelMetaclass.__POOL_INIT = True
-
             init()
+            
+            DatabaseModelMetaclass.__POOL_INIT = True
 
         if hasattr(cls, "database"):
             if cls.database not in settings.databases:
@@ -632,6 +629,13 @@ class DatabaseModelQuery:
 
                 else:
                     self._query += (" %s NOT IN (" % field) + ",".join(ins) + ")"
+            
+            elif type(value) == bool:
+                if value:
+                    self._query += " %s" % field
+
+                else:
+                    self._query += " NOT %s" % field
 
             elif wrap:
                 if type(value) == str and value.startswith("@"):
@@ -684,7 +688,6 @@ class DatabaseModelQuery:
                 connection = settings.databases[self._cls.Meta.database]["instance"].connection()
 
             cursor = connection.cursor()
-
             cursor.execute(query, self._values)
 
             records = []
