@@ -274,6 +274,16 @@ class Server:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def handle_init (self):
+        """
+        This callback is executed during the start of the process immediately before the processing loop starts. This
+        will be executed only once per process.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def handle_loop (self):
         """
         This callback is executed at the top of each event manager loop.
@@ -544,6 +554,9 @@ class Server:
         timeout_check          = 0
         unregister_func        = self._event_manager_unregister
         unregister_client_func = self.unregister_client
+
+        # initialize process
+        self.handle_init()
 
         # loop until the server is going to shutdown
         while not is_shutting_down:
