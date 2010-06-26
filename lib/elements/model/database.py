@@ -18,7 +18,7 @@ from elements.model.model    import Int
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-def connection (name="default"):
+def get_connection (name="default"):
     """
     Retrieve a database connection.
 
@@ -95,7 +95,7 @@ class DatabaseModelMetaclass (type):
 
         # meta details
         cls.Meta              = new.classobj("Meta", (object,), { "connection": None })
-        cls.Meta.columns      = None
+        cls.Meta.columns      = []
         cls.Meta.model        = cls.model
         cls.Meta.foreign_keys = {}
         cls.Meta.primary_key  = cls.primary_key
@@ -151,6 +151,24 @@ class DatabaseModelMetaclass (type):
         if not isinstance(cls.Meta.model.Meta.fields[cls.Meta.primary_key], Int):
             raise DatabaseModelException("%s primary key field '%s' is not an integer field" % (name,
                                                                                                 cls.Meta.primary_key))
+
+        # get column details
+        try:
+            connection = None
+            cursor     = None
+            connection = cls.Meta.db.connection()
+            cursor     = connection.cursor()
+
+            cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
+
+            [cls.Meta.columns.append(column[0]) for column in cursor.description]
+
+        finally:
+            if cursor:
+                cursor.close()
+
+            if connection:
+                connection.close()
 
         return type.__init__(cls, name, bases, members)
 
@@ -264,9 +282,10 @@ class DatabaseModel:
         @return (bool) True, upon success, otherwise False.
         """
 
+        meta   = self.Meta
         values = self.values()
 
-        if self.Meta.primary_key not in values:
+        if meta.primary_key not in values:
             raise DatabaseModelException("This DatabaseModel instance does not represent an active database record")
 
         try:
@@ -278,12 +297,12 @@ class DatabaseModel:
             else:
                 close      = True
                 cursor     = None
-                connection = settings.databases[self.Meta.database]["instance"].connection()
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
 
-            cursor.execute("DELETE FROM \"" + self.Meta.table + "\" WHERE " + self.Meta.primary_key + " = %s",
-                           (values[self.Meta.primary_key],))
+            cursor.execute("DELETE FROM \"" + meta.table + "\" WHERE " + meta.primary_key + " = %s",
+                           (values[meta.primary_key],))
 
             return cursor.rowcount and cursor.rowcount > 0
 
@@ -333,6 +352,8 @@ class DatabaseModel:
         @param connection (object) The connection to use for this operation.
         """
 
+        meta = cls.Meta
+
         try:
             if connection:
                 close  = False
@@ -341,21 +362,16 @@ class DatabaseModel:
             else:
                 close      = True
                 cursor     = None
-                connection = settings.databases[cls.Meta.database]["instance"].connection()
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
 
-            cursor.execute("SELECT * FROM \"" + cls.Meta.table + "\" WHERE " + cls.Meta.primary_key + " = %s", (id,))
+            cursor.execute("SELECT * FROM \"" + meta.table + "\" WHERE " + meta.primary_key + " = %s", (id,))
 
             record = cursor.fetchone()
 
             if record:
-                if not cls.Meta.columns:
-                    cls.Meta.columns = []
-
-                    [cls.Meta.columns.append(field[0]) for field in cursor.description]
-
-                record = cls(**dict(zip(cls.Meta.columns, record)))
+                record = cls(**dict(zip(meta.columns, record)))
 
                 if not close:
                     # give the passed connection to the object as well
@@ -379,7 +395,7 @@ class DatabaseModel:
         """
         Retrieve the current connection that is used in this model.
         
-        @return (object) The live database connection.
+        @return (object) The live database connection, if set_connection() has assigned a connection, otherwise None.
         """
 
         return self.__dict__["_connection"]
@@ -394,6 +410,8 @@ class DatabaseModel:
         @return (bool) True, upon success.
         """
 
+        meta = self.Meta
+
         try:
             if self.__dict__["_connection"]:
                 close      = False
@@ -403,27 +421,27 @@ class DatabaseModel:
             else:
                 close      = True
                 cursor     = None
-                connection = settings.databases[self.Meta.database]["instance"].connection()
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
             values = self.values()
 
-            if self.Meta.primary_key in values:
+            if meta.primary_key in values:
                 # update
                 up_keys   = []
                 up_values = []
 
                 for key, value in values.items():
-                    if key == self.Meta.primary_key or key in self.Meta.model.Meta.read_only:
+                    if key == meta.primary_key or key in meta.model.Meta.read_only:
                         continue
 
                     up_keys.append(key + "=%s")
                     up_values.append(value)
 
-                up_values.append(values[self.Meta.primary_key])
+                up_values.append(values[meta.primary_key])
 
-                cursor.execute("UPDATE \"" + self.Meta.table + "\" SET " + ",".join(up_keys) + " WHERE " + \
-                               self.Meta.primary_key + " = %s", up_values)
+                cursor.execute("UPDATE \"" + meta.table + "\" SET " + ",".join(up_keys) + " WHERE " + \
+                               meta.primary_key + " = %s", up_values)
 
             else:
                 # insert
@@ -432,14 +450,14 @@ class DatabaseModel:
                 in_values = []
 
                 for key, value in values.items():
-                    if key in self.Meta.model.Meta.read_only:
+                    if key in meta.model.Meta.read_only:
                         continue
 
                     in_fields.append("%s")
                     in_keys.append(key)
                     in_values.append(value)
 
-                cursor.execute("INSERT INTO \"" + self.Meta.table + "\" (" + ",".join(in_keys) + ") VALUES (" + \
+                cursor.execute("INSERT INTO \"" + meta.table + "\" (" + ",".join(in_keys) + ") VALUES (" + \
                                ",".join(in_fields) + ")", in_values)
 
             return cursor.rowcount and cursor.rowcount > 0
@@ -479,6 +497,7 @@ class DatabaseModel:
         @return (bool) True, upon success, otherwise False.
         """
 
+        meta      = self.Meta
         model     = self.__dict__["_model_inst"]
         validated = model.validate()
 
@@ -488,15 +507,15 @@ class DatabaseModel:
             # omitted since it's a primary key
             errors = model.errors()
 
-            if len(errors) == 1 and self.Meta.primary_key in errors and getattr(model, self.Meta.primary_key) == None:
+            if len(errors) == 1 and meta.primary_key in errors and getattr(model, meta.primary_key) == None:
                 validated = True
 
                 # remove the primary key error
-                del errors[self.Meta.primary_key]
+                del errors[meta.primary_key]
 
         if validated:
             # check foreign key values
-            if not validate_keys or len(self.Meta.foreign_keys) == 0:
+            if not validate_keys or len(meta.foreign_keys) == 0:
                 return True
 
             try:
@@ -506,11 +525,11 @@ class DatabaseModel:
 
                 else:
                     close      = True
-                    connection = settings.databases[self.Meta.database]["instance"].connection()
+                    connection = settings.databases[meta.database]["instance"].connection()
 
                 values = self.values()
 
-                for key, model in self.Meta.foreign_keys.items():
+                for key, model in meta.foreign_keys.items():
                     if key in values:
                         if not model.get(values[key], connection=connection):
                             errors[key] = settings.dbmodel_fk_constraint_err
@@ -664,6 +683,7 @@ class DatabaseModelQuery:
         """
 
         query = self._query
+        meta  = self._cls.Meta
 
         if self._order:
             query += " ORDER BY %s" % self._order
@@ -683,30 +703,33 @@ class DatabaseModelQuery:
             else:
                 close      = True
                 cursor     = None
-                connection = settings.databases[self._cls.Meta.database]["instance"].connection()
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
             cursor.execute(query, self._values)
 
             records = []
 
-            while True:
-                record = cursor.fetchone()
+            if convert:
+                # convert all records to a model instance
+                while True:
+                    record = cursor.fetchone()
 
-                if not record:
-                    break
+                    if not record:
+                        break
 
-                if not self._cls.Meta.columns:
-                    self._cls.Meta.columns = []
+                    records.append(self._cls(**dict(zip(meta.columns, record))))
 
-                    [self._cls.Meta.columns.append(field[0]) for field in cursor.description]
+            else:
+                # don't convert records
+                while True:
+                    record = cursor.fetchone()
 
-                if convert:
-                    records.append(self._cls(**dict(zip(self._cls.Meta.columns, record))))
+                    if not record:
+                        break
 
-                else:
-                    records.append(dict(zip(self._cls.Meta.columns, record)))
-
+                    records.append(dict(zip(meta.columns, record)))
+            
             return records
 
         except Exception, e:
@@ -763,7 +786,7 @@ class DatabaseModelQuery:
         """
         Retrieve the current connection that is being used.
         
-        @return (object) The live database connection.
+        @return (object) The live database connection, if set_connection() has assigned a connection, otherwise None.
         """
 
         return self._connection
