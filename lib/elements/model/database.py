@@ -67,6 +67,7 @@ def init ():
 
 class DatabaseModelMetaclass (type):
 
+    # indicates whether or not the pool has been initialized
     __POOL_INIT = False
 
     # ------------------------------------------------------------------------------------------------------------------
