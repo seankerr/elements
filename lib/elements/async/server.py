@@ -95,8 +95,7 @@ class Server:
 
         elif hasattr(select, "kqueue") and (event_manager is None or event_manager == "kqueue"):
             self._event_manager = KQueueEventManager(self)
-
-            self._worker_count = 0
+            self._worker_count  = 0
 
             if worker_count > 0:
                 print "KQueue does not support parent process file descriptor inheritence, " \
@@ -329,7 +328,7 @@ class Server:
         # iterate all clients and find the ones that are timed out/idle
         # execute the timeout callback and determine what to do
         for client in filter(lambda x: x._last_access_time < minimum_time and not x._is_channel and not x._is_host,
-                              self._clients.values()):
+                             self._clients.values()):
 
             client._events = 0
 
