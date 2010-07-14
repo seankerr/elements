@@ -93,14 +93,12 @@ class Model:
         """
 
         self.__dict__["_errors"] = {}
+        self.__dict__["_values"] = copy.copy(self.Meta.default)
 
-        if len(kwargs) == 0:
-            self.__dict__["_values"] = copy.copy(self.Meta.default)
-
-        else:
-            self.__dict__["_values"] = {}
-
-            self.merge(**kwargs)
+        if len(kwargs) > 0:
+            for key, value in kwargs.items():
+                if key in self.Meta.fields:
+                    self.__dict__["_values"][key] = value
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -320,30 +318,15 @@ class Field:
         @param name (str) The proper field name.
         """
 
-        self.default      = None
+        self.default      = kwargs.get("default", None)
         self.field        = ""
-        self.group        = None
+        self.group        = kwargs.get("group", None)
         self.model        = None
         self.name         = name
-        self.read_only    = False
-        self.required     = None
-        self.required_err = settings.model_required_err
+        self.read_only    = kwargs.get("read_only", False)
+        self.required     = kwargs.get("required", None)
+        self.required_err = kwargs.get("required_err", settings.model_required_err)
         self.validators   = []
-
-        if "default" in kwargs:
-            self.default = kwargs["default"]
-
-        if "group" in kwargs:
-            self.group = kwargs["group"]
-
-        if "read_only" in kwargs and type(kwargs["read_only"]) == bool:
-            self.read_only = kwargs["read_only"]
-
-        if "required" in kwargs and type(kwargs["required"]) == bool:
-            self.required = kwargs["required"]
-
-        if "required_err_err" in kwargs:
-            self.required_err = kwargs["required_err"]
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -424,11 +407,7 @@ class Boolean (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_boolean_type_err
+        self.type_err = kwargs.get("type_err", settings.model_boolean_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -481,11 +460,7 @@ class Date (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_date_type_err
+        self.type_err = kwargs.get("type_err", settings.model_date_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -536,11 +511,7 @@ class Datetime (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_datetime_type_err
+        self.type_err = kwargs.get("type_err", settings.model_datetime_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -600,11 +571,7 @@ class Domain (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_domain_type_err
+        self.type_err = kwargs.get("type_err", settings.model_domain_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -654,11 +621,7 @@ class Email (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_email_type_err
+        self.type_err = kwargs.get("type_err", settings.model_email_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -701,11 +664,7 @@ class Float (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_float_type_err
+        self.type_err = kwargs.get("type_err", settings.model_float_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -715,11 +674,7 @@ class Float (Field):
             self.min_val = kwargs["min"]
 
             if type(self.min_val) in (int, float):
-                if "min_err" in kwargs:
-                    self.min_err = kwargs["min_err"]
-
-                else:
-                    self.min_err = settings.model_float_min_err
+                self.min_err = kwargs.get("min_err", settings.model_float_min_err)
 
                 self.validators.append(self.min_check)
 
@@ -731,11 +686,7 @@ class Float (Field):
             self.max_val = kwargs["max"]
 
             if type(self.max_val) in (int, float):
-                if "max_err" in kwargs:
-                    self.max_err = kwargs["max_err"]
-
-                else:
-                    self.max_err = settings.model_float_max_err
+                self.max_err = kwargs.get("max_err", settings.model_float_max_err)
 
                 self.validators.append(self.max_check)
 
@@ -811,11 +762,7 @@ class Int (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_int_type_err
+        self.type_err = kwargs.get("type_err", settings.model_int_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -825,11 +772,7 @@ class Int (Field):
             self.min_val = kwargs["min"]
 
             if type(self.min_val) == int:
-                if "min_err" in kwargs:
-                    self.min_err = kwargs["min_err"]
-
-                else:
-                    self.min_err = settings.model_int_min_err
+                self.min_err = kwargs.get("min_err", settings.model_int_min_err)
 
                 self.validators.append(self.min_check)
 
@@ -841,11 +784,7 @@ class Int (Field):
             self.max_val = kwargs["max"]
 
             if type(self.max_val) == int:
-                if "max_err" in kwargs:
-                    self.max_err = kwargs["max_err"]
-
-                else:
-                    self.max_err = settings.model_int_max_err
+                self.max_err = kwargs.get("max_err", settings.model_int_max_err)
 
                 self.validators.append(self.max_check)
 
@@ -925,11 +864,7 @@ class IPAddress (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_ipaddress_type_err
+        self.type_err = kwargs.get("type_err", settings.model_ipaddress_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -972,11 +907,7 @@ class Money (Float):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_money_type_err
+        self.type_err = kwargs.get("type_err", settings.model_model_type_err)
 
         if "min" in kwargs and "min_err" not in kwargs:
             self.min_err = settings.model_money_min_err
@@ -1022,11 +953,7 @@ class Text (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_int_type_err
+        self.type_err = kwargs.get("type_err", settings.model_text_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -1036,11 +963,7 @@ class Text (Field):
             self.min_val = kwargs["min"]
 
             if type(self.min_val) == int:
-                if "min_err" in kwargs:
-                    self.min_err = kwargs["min_err"]
-
-                else:
-                    self.min_err = settings.model_text_min_err
+                self.min_err = kwargs.get("min_err", settings.model_text_min_err)
 
                 self.validators.append(self.min_check)
 
@@ -1052,11 +975,7 @@ class Text (Field):
             self.max_val = kwargs["max"]
 
             if type(self.max_val) == int:
-                if "max_err" in kwargs:
-                    self.max_err = kwargs["max_err"]
-
-                else:
-                    self.max_err = settings.model_text_max_err
+                self.max_err = kwargs.get("max_err", settings.model_text_max_err)
 
                 self.validators.append(self.max_check)
 
@@ -1068,11 +987,7 @@ class Text (Field):
             self.regex_val = kwargs["regex"]
 
             if type(self.regex_val) == str:
-                if "regex_err" in kwargs:
-                    self.regex_err = kwargs["regex_err"]
-
-                else:
-                    self.regex_err = settings.model_text_regex_err
+                self.regex_err = kwargs.get("regex_err", settings.model_text_regex_err)
 
                 try:
                     self.regex_val = re.compile(self.regex_val)
@@ -1175,11 +1090,7 @@ class Time (Field):
         """
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_time_type_err
+        self.type_err = kwargs.get("type_err", settings.model_time_type_err)
 
         # init parent class
         Field.__init__(self, name, *args, **kwargs)
@@ -1239,11 +1150,7 @@ class URL (Field):
         protocols = ("http",)
 
         # type validator
-        if "type_err" in kwargs:
-            self.type_err = kwargs["type_err"]
-
-        else:
-            self.type_err = settings.model_url_type_err
+        self.type_err = kwargs.get("type_err", settings.model_url_type_err)
 
         # check for protocols
         if "protocols" in kwargs:
