@@ -374,3 +374,5 @@ class HostClient (Client):
 
             except Exception, e:
                 client_socket.close()
+
+                raise ClientException("Cannot create client: %s" % e)
