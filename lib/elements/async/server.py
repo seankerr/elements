@@ -42,7 +42,7 @@ from elements.core.exception import ServerException
 class Server:
 
     def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, timeout=None,
-                  timeout_interval=10, worker_count=0, channel_count=1, event_manager=None):
+                  timeout_interval=10, worker_count=0, channel_count=1, event_manager=None, print_settings=True):
         """
         Create a new Server instance.
 
@@ -58,6 +58,7 @@ class Server:
         @param worker_count     (int)       The worker process count.
         @param channel_count    (int)       The communication channel count for each worker.
         @param event_manager    (str)       The event manager.
+        @param print_settings   (bool)      Indicates that the server settings should be printed to the console.
         """
 
         self._channels                 = {}               # worker channels
@@ -78,9 +79,9 @@ class Server:
         self._is_shutting_down         = False            # indicates that this server is shutting down
         self._is_serving_client        = False            # indicates that a client is being served
         self._loop_interval            = 1                # the interval in seconds between calling handle_loop()
+        self._print_settings           = print_settings   # indicates that the settings should be printed to the console
         self._timeout                  = timeout          # the timeout in seconds for a client to be removed
-        self._timeout_interval         = timeout_interval # the interval in seconds between checking for timed out
-                                                          # clients
+        self._timeout_interval         = timeout_interval # the interval in seconds between checking for idle clients
         self._umask                    = umask            # process umask
         self._user                     = user             # process user
         self._worker_count             = worker_count     # count of worker processes
@@ -507,32 +508,33 @@ class Server:
         """
 
         if self._is_parent:
-            # show initialization settings
-            print
-            print "+---------------------------------------------------------------+"
-            print "| Elements v0.1.1 Initialized                                   |"
-            print "+---------------------------------------------------------------+"
-            print "| Daemonized:          %-40s |" % self._is_daemon
-            print "| Event manager:       %-40s |" % self._event_manager.__class__.__name__
-            print "| Workers:             %-40d |" % self._worker_count
-            print "| Channels per worker: %-40d |" % self._channel_count
-            print "| User:                %-40s |" % (self._user if self._user else "-")
-            print "| Group:               %-40s |" % (self._group if self._group else "-")
-            print "| User mask:           %-40s |" % (self._umask if self._umask else "-")
-            print "| Chroot:              %-40s |" % (self._chroot if self._chroot else "-")
+            if self._print_settings:
+                # show initialization settings
+                print
+                print "+---------------------------------------------------------------+"
+                print "| Elements v0.1.1 Initialized                                   |"
+                print "+---------------------------------------------------------------+"
+                print "| Daemonized:          %-40s |" % self._is_daemon
+                print "| Event manager:       %-40s |" % self._event_manager.__class__.__name__
+                print "| Workers:             %-40d |" % self._worker_count
+                print "| Channels per worker: %-40d |" % self._channel_count
+                print "| User:                %-40s |" % (self._user if self._user else "-")
+                print "| Group:               %-40s |" % (self._group if self._group else "-")
+                print "| User mask:           %-40s |" % (self._umask if self._umask else "-")
+                print "| Chroot:              %-40s |" % (self._chroot if self._chroot else "-")
 
-            if len(self._hosts) > 0:
-                print "|                                                               |"
-                print "| Listening on hosts:                                           |"
+                if len(self._hosts) > 0:
+                    print "|                                                               |"
+                    print "| Listening on hosts:                                           |"
 
-                for host in self._hosts:
-                    print "|   %-59s |" % ("%s:%d" % host._client_address)
+                    for host in self._hosts:
+                        print "|   %-59s |" % ("%s:%d" % host._client_address)
 
-            else:
-                print "|                                                               |"
-                print "| Not listening on any hosts                                    |"
+                else:
+                    print "|                                                               |"
+                    print "| Not listening on any hosts                                    |"
 
-            print "+---------------------------------------------------------------+"
+                print "+---------------------------------------------------------------+"
 
             # spawn workers
             for i in xrange(0, self._worker_count):
