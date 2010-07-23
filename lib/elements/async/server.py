@@ -237,6 +237,8 @@ class Server:
         @param client_socket  (socket) The client socket.
         @param client_address (tuple)  The client ip address and port.
         @param server_address (tuple)  The server ip address and port upon which the client connected.
+
+        @return (Client) The Client instance representing the new client socket.
         """
 
         try:
@@ -255,6 +257,8 @@ class Server:
 
         @param exception (Exception) The exception.
         @param client    (Client)    The Client instance that was active during the exception.
+        
+        @return (bool) True, if processing should continue, otherwise False.
         """
 
         if isinstance(exception, ServerException):
