@@ -367,4 +367,10 @@ class HostClient (Client):
         """
 
         if not self._server._is_long_running or not self._server._is_serving_client:
-            self._handle_client(*self._client_socket.accept(), server_address=self._client_address)
+            client_socket, client_address = self._client_socket.accept()
+
+            try:
+                self._server.register_client(self._handle_client(client_socket, client_address, self._client_address))
+
+            except Exception, e:
+                client_socket.close()
