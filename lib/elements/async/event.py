@@ -82,9 +82,10 @@ class KQueueEventManager (EventManager):
         self._count  = 0
         self._kqueue = select.kqueue()
    
-        self.EVENT_ERROR = 1
-        self.EVENT_READ  = 2
-        self.EVENT_WRITE = 4
+        self.EVENT_ERROR  = 1
+        self.EVENT_READ   = 2
+        self.EVENT_WRITE  = 4
+        self.EVENT_LINGER = 8
     
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -171,9 +172,11 @@ class PollEventManager (EventManager):
 
         self._poll = select.poll()
    
-        self.EVENT_ERROR = select.POLLERR | select.POLLHUP | select.POLLNVAL
-        self.EVENT_READ  = select.POLLIN | select.POLLPRI
-        self.EVENT_WRITE = select.POLLOUT
+        self.EVENT_ERROR  = select.POLLERR | select.POLLHUP | select.POLLNVAL
+        self.EVENT_READ   = select.POLLIN | select.POLLPRI
+        self.EVENT_WRITE  = select.POLLOUT
+        self.EVENT_LINGER = (select.POLLERR | select.POLLHUP | select.POLLNVAL | select.POLLIN | select.POLLPRI | \
+                             select.POLLOUT) << 1
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -234,9 +237,11 @@ class EPollEventManager (PollEventManager):
 
         self._poll = select.epoll()
     
-        self.EVENT_ERROR = select.EPOLLERR | select.EPOLLHUP
-        self.EVENT_READ  = select.EPOLLIN | select.EPOLLPRI
-        self.EVENT_WRITE = select.EPOLLOUT
+        self.EVENT_ERROR  = select.EPOLLERR | select.EPOLLHUP
+        self.EVENT_READ   = select.EPOLLIN | select.EPOLLPRI
+        self.EVENT_WRITE  = select.EPOLLOUT
+        self.EVENT_LINGER = (select.EPOLLERR | select.EPOLLHUP | select.EPOLLIN | select.EPOLLPRI | \
+                             select.EPOLLOUT) << 1
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -255,9 +260,10 @@ class SelectEventManager (EventManager):
         self._read_filenos  = set()
         self._write_filenos = set()
    
-        self.EVENT_ERROR = 1
-        self.EVENT_READ  = 2
-        self.EVENT_WRITE = 4
+        self.EVENT_ERROR  = 1
+        self.EVENT_READ   = 2
+        self.EVENT_WRITE  = 4
+        self.EVENT_LINGER = 8
 
     # ------------------------------------------------------------------------------------------------------------------
 

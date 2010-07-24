@@ -118,8 +118,9 @@ class Server:
         self._event_manager_unregister = self._event_manager.unregister
 
         # update the client module with the proper events
-        client.EVENT_READ  = self._event_manager.EVENT_READ
-        client.EVENT_WRITE = self._event_manager.EVENT_WRITE
+        client.EVENT_LINGER = self._event_manager.EVENT_LINGER
+        client.EVENT_READ   = self._event_manager.EVENT_READ
+        client.EVENT_WRITE  = self._event_manager.EVENT_WRITE
 
         # change group
         if group:
@@ -545,9 +546,10 @@ class Server:
             if self._worker_count == 0:
                 self.listen(True)
 
-        EVENT_ERROR = self._event_manager.EVENT_ERROR
-        EVENT_READ  = self._event_manager.EVENT_READ
-        EVENT_WRITE = self._event_manager.EVENT_WRITE
+        EVENT_ERROR  = self._event_manager.EVENT_ERROR
+        EVENT_LINGER = self._event_manager.EVENT_LINGER
+        EVENT_READ   = self._event_manager.EVENT_READ
+        EVENT_WRITE  = self._event_manager.EVENT_WRITE
 
         # we cache some methods/vars locally to avoid dereferencing in each loop which could potentially be
         # thousands of times per second

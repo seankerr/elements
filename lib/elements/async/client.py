@@ -31,8 +31,9 @@ from elements.core.exception import ClientException
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-EVENT_READ  = 0
-EVENT_WRITE = 0
+EVENT_LINGER = 0
+EVENT_READ   = 0
+EVENT_WRITE  = 0
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -200,6 +201,19 @@ class Client:
         """
 
         pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def linger (self):
+        """
+        Force the connection to linger even when read and write events are not active.
+
+        Note: This will require Server.handle_loop() or another client to re-activate this client with new events.
+        """
+
+        self._events |= EVENT_LINGER
+
+        print "linger"
 
     # ------------------------------------------------------------------------------------------------------------------
 
