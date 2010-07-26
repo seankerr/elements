@@ -213,8 +213,6 @@ class Client:
 
         self._events |= EVENT_LINGER
 
-        print "linger"
-
     # ------------------------------------------------------------------------------------------------------------------
 
     def read_delimiter (self, delimiter, callback, max_bytes=0):
