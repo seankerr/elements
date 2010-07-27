@@ -573,10 +573,9 @@ class HttpClient (Client):
 
                 self.handle_upload_flushed(self.files[self._multipart_name][-1])
 
-        self._events         |= self._server._event_manager.EVENT_READ
-        self._read_callback   = callback
-        self._read_delimiter  = delimiter
-        self._read_max_bytes  = max_bytes
+        self._read_callback  = callback
+        self._read_delimiter = delimiter
+        self._read_max_bytes = max_bytes
 
     # ------------------------------------------------------------------------------------------------------------------
 
