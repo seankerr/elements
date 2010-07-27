@@ -231,7 +231,6 @@ class Client:
 
         if pos > -1:
             # the delimiter has been found
-            #self._events &= ~EVENT_READ 
             self._read_delimiter = None
 
             if max_bytes and pos > max_bytes:
@@ -253,7 +252,6 @@ class Client:
         # the delimiter still hasn't been sent
         if max_bytes and len(data) >= max_bytes:
             # the maximum byte limit has been reached
-            #self._events &= ~EVENT_READ 
             self._read_delimiter = None
 
             if not self.handle_max_bytes(max_bytes):
@@ -262,10 +260,9 @@ class Client:
 
             max_bytes = None
 
-        self._events         |= EVENT_READ
-        self._read_callback   = callback
-        self._read_delimiter  = delimiter
-        self._read_max_bytes  = max_bytes
+        self._read_callback  = callback
+        self._read_delimiter = delimiter
+        self._read_max_bytes = max_bytes
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -282,7 +279,6 @@ class Client:
         
         if len(data) >= length:
             # the read buffer has met our length requirement
-            #self._events &= ~EVENT_READ
             self._read_length = None
 
             buffer.seek(0)
@@ -294,9 +290,8 @@ class Client:
             return
 
         # there is still more to read
-        self._events        |= EVENT_READ
-        self._read_callback  = callback
-        self._read_length    = length
+        self._read_callback = callback
+        self._read_length   = length
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -369,7 +364,6 @@ class HostClient (Client):
 
         Client.__init__(self, host_socket, host_address, server, None)
 
-        self._events        = EVENT_READ
         self._handle_client = server.handle_client
         self._is_host       = True
 
