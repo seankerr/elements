@@ -52,7 +52,7 @@ class Client:
 
         self._client_address   = client_address         # client address
         self._client_socket    = client_socket          # client ip
-        self._events           = 0                      # active events
+        self._events           = EVENT_READ             # active events
         self._fileno           = client_socket.fileno() # file descriptor
         self._is_channel       = False                  # indicates that this client is a channel
         self._is_host          = False                  # indicates that this client is a host
@@ -231,17 +231,16 @@ class Client:
 
         if pos > -1:
             # the delimiter has been found
+            #self._events &= ~EVENT_READ 
+            self._read_delimiter = None
+
             if max_bytes and pos > max_bytes:
                 # the maximum byte limit has been reached
-                self._events &= ~EVENT_READ 
-
                 if not self.handle_max_bytes(max_bytes):
                     # max bytes callback has stopped client processing
                     return
 
             pos += len(delimiter)
-
-            self._events &= ~EVENT_READ
 
             buffer.seek(0)
             buffer.truncate()
@@ -254,7 +253,8 @@ class Client:
         # the delimiter still hasn't been sent
         if max_bytes and len(data) >= max_bytes:
             # the maximum byte limit has been reached
-            self._events &= ~EVENT_READ 
+            #self._events &= ~EVENT_READ 
+            self._read_delimiter = None
 
             if not self.handle_max_bytes(max_bytes):
                 # max bytes callback has stopped client processing
@@ -282,7 +282,8 @@ class Client:
         
         if len(data) >= length:
             # the read buffer has met our length requirement
-            self._events &= ~EVENT_READ
+            #self._events &= ~EVENT_READ
+            self._read_length = None
 
             buffer.seek(0)
             buffer.truncate()
