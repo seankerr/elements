@@ -209,7 +209,8 @@ class Client:
         """
         Force the connection to linger even when read and write events are not active.
 
-        Note: This will require Server.handle_loop() or another client to re-activate this client with new events.
+        Note: If no other events are active, only disconnects will be handled automatically. Otherwise another client,
+              or Server.handle_loop() must re-enable events for this client.
         """
 
         self._events |= EVENT_LINGER
