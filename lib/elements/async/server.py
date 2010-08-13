@@ -46,7 +46,7 @@ class Server:
         """
         Create a new Server instance.
 
-        @param hosts            (iterable)  An iterable that contains one or more iterables of host ip/port pairs.
+        @param hosts            (tuple)     A tuple that contains one or more tuples of host ip/port pairs.
         @param daemonize        (bool)      Indicates that the process should be daemonized.
         @param user             (str)       The process user.
         @param group            (str)       The process group.
