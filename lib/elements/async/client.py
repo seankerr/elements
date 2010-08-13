@@ -205,18 +205,6 @@ class Client:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def linger (self):
-        """
-        Force the connection to linger even when read and write events are not active.
-
-        Note: If no other events are active, only disconnects will be handled automatically. Otherwise another client,
-              or Server.handle_loop() must re-enable events for this client.
-        """
-
-        self._events |= EVENT_LINGER
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def read_delimiter (self, delimiter, callback, max_bytes=0):
         """
         Read until a certain delimiter has been found within the read buffer.
@@ -293,6 +281,21 @@ class Client:
         # there is still more to read
         self._read_callback = callback
         self._read_length   = length
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_linger (self, linger):
+        """
+        Set the linger status.
+        """
+
+        if linger:
+            self._events |= EVENT_LINGER
+
+        else:
+            self._events &= ~EVENT_LINGER
+
+        self._server._event_manager_modify(self._fileno, self._events)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -379,7 +382,7 @@ class HostClient (Client):
             client_socket, client_address = self._client_socket.accept()
 
             try:
-                self._server.register_client(self._handle_client(client_socket, client_address, self._client_address))
+                self._handle_client(client_socket, client_address, self._client_address)
 
             except Exception, e:
                 client_socket.close()
