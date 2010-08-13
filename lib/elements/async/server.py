@@ -239,8 +239,6 @@ class Server:
         @param client_socket  (socket) The client socket.
         @param client_address (tuple)  The client ip address and port.
         @param server_address (tuple)  The server ip address and port upon which the client connected.
-
-        @return (Client) The Client instance representing the new client socket.
         """
 
         try:
