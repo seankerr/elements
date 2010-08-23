@@ -192,7 +192,7 @@ class Server:
 
     def add_host (self, ip, port):
         """
-        Add a host. 
+        Add a host.
 
         @param ip   (str) A hostname or ip address.
         @param port (int) The port.
@@ -200,7 +200,7 @@ class Server:
 
         try:
             host = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-   
+
             # disable blocking
             fcntl_func(host.fileno(), fcntl_setfl, fcntl_func(host.fileno(), fcntl_getfl) | os.O_NONBLOCK)
 
@@ -231,7 +231,7 @@ class Server:
         return channels
 
     # ------------------------------------------------------------------------------------------------------------------
-    
+
     def handle_client (self, client_socket, client_address, server_address):
         """
         Handle a new client connection. This is an abstract method that must be overridden in a sub-class.
@@ -257,7 +257,7 @@ class Server:
 
         @param exception (Exception) The exception.
         @param client    (Client)    The Client instance that was active during the exception.
-        
+
         @return (bool) True, if processing should continue, otherwise False.
         """
 
@@ -360,7 +360,7 @@ class Server:
         pass
 
     # ------------------------------------------------------------------------------------------------------------------
-    
+
     def listen (self, status):
         """
         Notify the current process to start or stop listening on all hosts.
@@ -421,7 +421,7 @@ class Server:
         # unregister and shutdown all clients
         for client in self._clients.values():
             self.unregister_client(client)
-    
+
         # wait for all worker processes to exit
         if self._is_parent:
             for pid in self._channels:
@@ -462,7 +462,7 @@ class Server:
             worker_sockets.append(pair[1])
 
         pid = os.fork()
-        
+
         if pid:
             # initialize and register worker channels
             self.__register_channels(self.handle_channels(pid, parent_sockets))
@@ -500,7 +500,7 @@ class Server:
             os._exit(0)
 
     # ------------------------------------------------------------------------------------------------------------------
-    
+
     def start (self):
         """
         Start the infinite loop that iterates file descriptor events.
@@ -747,7 +747,7 @@ class Server:
 
             for channel in channels:
                 self.register_client(channel)
-                
+
                 if channel._pid in self._channels:
                     self._channels[channel._pid].append(channel)
 
@@ -759,7 +759,7 @@ class Server:
                 raise ChannelException("Expected %d channels, but got 1" % self._channel_count)
 
             self.register_client(channels)
-                
+
             if channel._pid in self._channels:
                 self._channels[channel._pid].append(channel)
 

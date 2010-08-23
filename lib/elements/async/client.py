@@ -52,7 +52,7 @@ class Client:
 
         self._client_address   = client_address         # client address
         self._client_socket    = client_socket          # client ip
-        self._events           = EVENT_READ             # active events
+        self._events           = 0                      # active events
         self._fileno           = client_socket.fileno() # file descriptor
         self._is_channel       = False                  # indicates that this client is a channel
         self._is_host          = False                  # indicates that this client is a host
@@ -180,7 +180,7 @@ class Client:
         if length == len(data):
             # write buffer has been entirely written
             self._events &= ~EVENT_WRITE
-            
+
             self.handle_write_finished()
 
             return
@@ -191,7 +191,7 @@ class Client:
             buffer.seek(0)
             buffer.truncate()
             buffer.write(data[self._write_index:])
-            
+
             self._write_index = 0
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -220,7 +220,8 @@ class Client:
 
         if pos > -1:
             # the delimiter has been found
-            self._read_delimiter = None
+            self._events         &= ~EVENT_READ
+            self._read_delimiter  = None
 
             if max_bytes and pos > max_bytes:
                 # the maximum byte limit has been reached
@@ -245,13 +246,16 @@ class Client:
 
             if not self.handle_max_bytes(max_bytes):
                 # max bytes callback has stopped client processing
+                self._events &= ~EVENT_READ
+
                 return
 
             max_bytes = None
 
-        self._read_callback  = callback
-        self._read_delimiter = delimiter
-        self._read_max_bytes = max_bytes
+        self._events         |= EVENT_READ
+        self._read_callback   = callback
+        self._read_delimiter  = delimiter
+        self._read_max_bytes  = max_bytes
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -265,10 +269,11 @@ class Client:
 
         buffer = self._read_buffer
         data   = buffer.getvalue()
-        
+
         if len(data) >= length:
             # the read buffer has met our length requirement
-            self._read_length = None
+            self._events      &= ~EVENT_READ
+            self._read_length  = None
 
             buffer.seek(0)
             buffer.truncate()
@@ -279,8 +284,9 @@ class Client:
             return
 
         # there is still more to read
-        self._read_callback = callback
-        self._read_length   = length
+        self._events        |= EVENT_READ
+        self._read_callback  = callback
+        self._read_length    = length
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -368,6 +374,7 @@ class HostClient (Client):
 
         Client.__init__(self, host_socket, host_address, server, None)
 
+        self._events        = EVENT_READ
         self._handle_client = server.handle_client
         self._is_host       = True
 
