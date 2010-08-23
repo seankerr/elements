@@ -35,11 +35,11 @@
 #    }
 #}
 
-dbmodel_fk_constraint_err = "Foreign key does not exist"
-
 # ----------------------------------------------------------------------------------------------------------------------
 # MODEL
 # ----------------------------------------------------------------------------------------------------------------------
+
+dbmodel_fk_constraint_err = "Foreign key does not exist"
 
 model_required_err       = "This is required"
 model_boolean_type_err   = "Invalid boolean value"
