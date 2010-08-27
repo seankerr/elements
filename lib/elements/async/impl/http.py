@@ -110,7 +110,7 @@ class HttpClient (Client):
         self.read_delimiter("\r\n", self.handle_request, 5000)
 
     # ------------------------------------------------------------------------------------------------------------------
-    
+
     def allow_persistence (self, status, max_requests=None):
         """
         Set the persistence status.
@@ -145,7 +145,7 @@ class HttpClient (Client):
 
             else:
                 out_headers["Connection"] = "close"
-        
+
         # build the request head
         head = " ".join((self.in_headers["SERVER_PROTOCOL"], self.response_code))
 
@@ -182,9 +182,9 @@ class HttpClient (Client):
             # parse headers
             for header in data.rstrip().split("\r\n"):
                 header = header.split(": ")
-                
+
                 in_headers["HTTP_" + header[0].upper().replace("-", "_")] = header[1]
-                
+
             # parse cookies
             if "HTTP_COOKIE" in in_headers:
                 for cookie in in_headers["HTTP_COOKIE"].split(";"):
@@ -201,7 +201,7 @@ class HttpClient (Client):
 
             # check content type
             content_type = in_headers.get("HTTP_CONTENT_TYPE", "text/plain").lower()
-            
+
             if content_type == "text/plain":
                 # nothing else to do, just dispatch the request
                 self.handle_dispatch()
@@ -268,7 +268,7 @@ class HttpClient (Client):
 
             for header in data.rstrip().split("\r\n"):
                 header = header.split(": ")
-                
+
                 headers[header[0].upper()] = header[1]
 
             disposition = headers["CONTENT-DISPOSITION"][11:]
@@ -283,7 +283,7 @@ class HttpClient (Client):
                 self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary, 100000)
 
                 return
-                
+
             # file upload
             pos += 10
 
@@ -299,7 +299,7 @@ class HttpClient (Client):
                      "filename":   disposition[pos:disposition.find("\"", pos)],
                      "size":       0,
                      "temp_name":  temp_name }
-           
+
             # determine mimetype
             mimetype = mimetypes.guess_type(file["filename"])
 
@@ -313,11 +313,15 @@ class HttpClient (Client):
                 file["content_type"] = "text/plain"
 
             if name in self.files:
+                if type(self.files[name]) != list:
+                    # convert individual file to list
+                    self.files[name] = [self.files[name]]
+
                 self.files[name].append(file)
 
             else:
-                self.files[name] = [file]
-            
+                self.files[name] = file
+
             self._multipart_file = open("/".join((self._server._upload_dir, temp_name)), "wb+")
 
             self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
@@ -371,7 +375,7 @@ class HttpClient (Client):
         self.read_delimiter     = self._orig_read_delimiter
         self.response_code      = HTTP_200
 
-        # parse method, uri and protocol 
+        # parse method, uri and protocol
         try:
             data                  = data.rstrip()
             method, uri, protocol = data.split(" ")
@@ -406,9 +410,15 @@ class HttpClient (Client):
 
         if pos > -1:
             query_string               = uri[pos + 1:]
-            self.params                = urlparse.parse_qs(query_string, True)
+            params                     = urlparse.parse_qs(query_string, True)
             in_headers["QUERY_STRING"] = query_string
             in_headers["SCRIPT_NAME"]  = uri[:pos]
+
+            for key, value in params.items():
+                if len(value) == 1:
+                    params[key] = value[0]
+
+            self.params = params
 
         else:
             self.params = {}
@@ -435,7 +445,10 @@ class HttpClient (Client):
 
         # delete all temp files
         if self.files:
-            for file in self.files.values():
+            for file in self.files:
+                if type(file) != list:
+                    file = [file]
+
                 for file in file:
                     try:
                         os.unlink("/".join((self._server._upload_dir, file["temp_name"])))
@@ -480,12 +493,30 @@ class HttpClient (Client):
         @param data The content.
         """
 
+        params = self.params
+
         for key, value in urlparse.parse_qs(data.rstrip()).items():
-            if key in self.params:
-                self.params[key].append(value)
-            
+            if key in params:
+                values = params[key]
+
+                if type(values) == list:
+                    values.extend(value)
+
+                    continue
+
+                values      = [values]
+                params[key] = values
+
+                values.extend(value)
+
             else:
-                self.params[key] = [value]
+                if len(value) == 1:
+                    # individual param value, so let's extract it out of the list
+                    params[key] = value[0]
+
+                    continue
+
+                params[key] = value
 
         # dispatch the client
         self.handle_dispatch()
@@ -515,24 +546,30 @@ class HttpClient (Client):
         buffer = self._read_buffer
         data   = buffer.getvalue()
         file   = self._multipart_file
+        name   = self._multipart_name
+        params = self.params
         pos    = data.find(delimiter)
 
         if not self._multipart_file:
             # form field
             if pos > -1:
                 # boundary has been found
-                if self._multipart_name in self.params:
-                    self.params[self._multipart_name].append(data[:pos - 2])
+                if name in params:
+                    if type(params[name]) != list:
+                        # param already existed, but wasn't a list so let's convert it
+                        params[name] = [params[name]]
+
+                    params[name].append(data[:pos - 2])
 
                 else:
-                    self.params[self._multipart_name] = [data[:pos - 2]]
+                    params[self._multipart_name] = data[:pos - 2]
 
                 self.read_delimiter = self._orig_read_delimiter
 
                 buffer.seek(0)
                 buffer.truncate()
                 buffer.write(data[pos + len(delimiter):])
-             
+
                 self.read_length(2, callback)
 
                 return
@@ -607,7 +644,7 @@ class HttpClient (Client):
         if secure:
             cookie += "; secure"
 
-        self.out_cookies[name] = cookie        
+        self.out_cookies[name] = cookie
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -666,5 +703,5 @@ class HttpServer (Server):
         else:
             client.write("HTTP 500 Internal Server Error\r\nServer: %s\r\n\r\n<h1>Internal Server Error</h1>" %
                          elements.APP_NAME)
-            
+
         client.flush()
