@@ -188,7 +188,7 @@ class PollEventManager (EventManager):
         @param events (int) The events.
         """
 
-        self._poll.modify(fileno, events & (~SELF.EVENT_LINGER))
+        self._poll.modify(fileno, events & (~self.EVENT_LINGER))
 
     # ------------------------------------------------------------------------------------------------------------------
 
