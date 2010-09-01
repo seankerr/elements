@@ -280,7 +280,7 @@ class HttpClient (Client):
 
             if pos == -1:
                 # regular field
-                self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary, 100000)
+                self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary, 1000)
 
                 return
 
