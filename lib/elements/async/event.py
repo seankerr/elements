@@ -32,7 +32,7 @@ class EventManager:
         @param events (int) The events.
         """
 
-        raise EventException("EventManager.modify() must be overridden")        
+        raise EventException("EventManager.modify() must be overridden")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -41,7 +41,7 @@ class EventManager:
         Poll the event manager for more events.
         """
 
-        raise EventException("EventManager.poll() must be overridden")        
+        raise EventException("EventManager.poll() must be overridden")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -53,7 +53,7 @@ class EventManager:
         @param events (int) The events.
         """
 
-        raise EventException("EventManager.register() must be overridden")        
+        raise EventException("EventManager.register() must be overridden")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -64,7 +64,7 @@ class EventManager:
         @param fileno (int) The file descriptor.
         """
 
-        raise EventException("EventManager.unregister() must be overridden")        
+        raise EventException("EventManager.unregister() must be overridden")
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -81,12 +81,12 @@ class KQueueEventManager (EventManager):
 
         self._count  = 0
         self._kqueue = select.kqueue()
-   
+
         self.EVENT_ERROR  = 1
         self.EVENT_READ   = 2
         self.EVENT_WRITE  = 4
         self.EVENT_LINGER = 8
-    
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def modify (self, fileno, events):
@@ -171,7 +171,7 @@ class PollEventManager (EventManager):
         EventManager.__init__(self, server)
 
         self._poll = select.poll()
-   
+
         self.EVENT_ERROR  = select.POLLERR | select.POLLHUP | select.POLLNVAL
         self.EVENT_READ   = select.POLLIN | select.POLLPRI
         self.EVENT_WRITE  = select.POLLOUT
@@ -187,6 +187,8 @@ class PollEventManager (EventManager):
         @param fileno (int) The file descriptor.
         @param events (int) The events.
         """
+
+        events &= ~self.EVENT_LINGER
 
         self._poll.modify(fileno, events)
 
@@ -208,6 +210,8 @@ class PollEventManager (EventManager):
         @param fileno (int) The file descriptor.
         @param events (int) The events.
         """
+
+        events &= ~self.EVENT_LINGER
 
         self._poll.register(fileno, events)
 
@@ -236,7 +240,7 @@ class EPollEventManager (PollEventManager):
         PollEventManager.__init__(self, server)
 
         self._poll = select.epoll()
-    
+
         self.EVENT_ERROR  = select.EPOLLERR | select.EPOLLHUP
         self.EVENT_READ   = select.EPOLLIN | select.EPOLLPRI
         self.EVENT_WRITE  = select.EPOLLOUT
@@ -259,7 +263,7 @@ class SelectEventManager (EventManager):
         self._error_filenos = set()
         self._read_filenos  = set()
         self._write_filenos = set()
-   
+
         self.EVENT_ERROR  = 1
         self.EVENT_READ   = 2
         self.EVENT_WRITE  = 4
@@ -310,12 +314,12 @@ class SelectEventManager (EventManager):
 
         for fileno in write_filenos:
             events[fileno] = events.get(fileno, 0) | self.EVENT_WRITE
-        
+
         for fileno in error_filenos:
             events[fileno] = events.get(fileno, 0) | self.EVENT_ERROR
 
         return events.items()
-        
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def register (self, fileno, events):
