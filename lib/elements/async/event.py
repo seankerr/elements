@@ -172,7 +172,7 @@ class PollEventManager (EventManager):
 
         self._poll = select.poll()
 
-        self.EVENT_ERROR  = select.POLLERR | select.POLLHUP | select.POLLNVAL
+        self.EVENT_ERROR  = select.POLLERR | select.POLLNVAL
         self.EVENT_READ   = select.POLLIN | select.POLLPRI
         self.EVENT_WRITE  = select.POLLOUT
         self.EVENT_LINGER = select.POLLHUP
@@ -187,7 +187,7 @@ class PollEventManager (EventManager):
         @param events (int) The events.
         """
 
-        self._poll.modify(fileno, events & (~self.EVENT_LINGER))
+        self._poll.modify(fileno, events)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -208,7 +208,7 @@ class PollEventManager (EventManager):
         @param events (int) The events.
         """
 
-        self._poll.register(fileno, events & (~self.EVENT_LINGER))
+        self._poll.register(fileno, events)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -236,7 +236,7 @@ class EPollEventManager (PollEventManager):
 
         self._poll = select.epoll()
 
-        self.EVENT_ERROR  = select.EPOLLERR | select.EPOLLHUP
+        self.EVENT_ERROR  = select.EPOLLERR
         self.EVENT_READ   = select.EPOLLIN | select.EPOLLPRI
         self.EVENT_WRITE  = select.EPOLLOUT
         self.EVENT_LINGER = select.EPOLLHUP
