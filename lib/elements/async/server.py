@@ -41,8 +41,9 @@ from elements.core.exception import ServerException
 
 class Server:
 
-    def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, timeout=None,
-                  timeout_interval=10, worker_count=0, channel_count=1, event_manager=None, print_settings=True):
+    def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, loop_interval=1,
+                  timeout=None, timeout_interval=10, worker_count=0, channel_count=1, event_manager=None,
+                  print_settings=True):
         """
         Create a new Server instance.
 
