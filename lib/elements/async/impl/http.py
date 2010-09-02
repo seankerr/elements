@@ -529,8 +529,14 @@ class HttpClient (Client):
         """
 
         if self._is_allowing_persistence and self._persistence_type:
-            self.clear()
+            # allowing another request
+            self.clear_write_buffer()
             self.read_delimiter("\r\n", self.handle_request, 5000)
+
+            return
+
+        # clear the events so the server inits the shutdown sequence
+        self.clear_events()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -695,7 +701,7 @@ class HttpServer (Server):
         if not client:
             return
 
-        client.clear()
+        client.clear_write_buffer()
 
         if isinstance(exception, HttpException):
             client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (exception[1], elements.APP_NAME, exception[0]))
