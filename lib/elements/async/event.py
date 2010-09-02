@@ -175,8 +175,7 @@ class PollEventManager (EventManager):
         self.EVENT_ERROR  = select.POLLERR | select.POLLHUP | select.POLLNVAL
         self.EVENT_READ   = select.POLLIN | select.POLLPRI
         self.EVENT_WRITE  = select.POLLOUT
-        self.EVENT_LINGER = (select.POLLERR | select.POLLHUP | select.POLLNVAL | select.POLLIN | select.POLLPRI | \
-                             select.POLLOUT) << 1
+        self.EVENT_LINGER = select.POLLHUP
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -240,8 +239,7 @@ class EPollEventManager (PollEventManager):
         self.EVENT_ERROR  = select.EPOLLERR | select.EPOLLHUP
         self.EVENT_READ   = select.EPOLLIN | select.EPOLLPRI
         self.EVENT_WRITE  = select.EPOLLOUT
-        self.EVENT_LINGER = (select.EPOLLERR | select.EPOLLHUP | select.EPOLLIN | select.EPOLLPRI | \
-                             select.EPOLLOUT) << 1
+        self.EVENT_LINGER = select.EPOLLHUP
 
 # ----------------------------------------------------------------------------------------------------------------------
 
