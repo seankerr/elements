@@ -579,9 +579,15 @@ class Server:
                     try:
                         loop_check = now
 
-                        if not self.handle_loop():
+                        loop_clients = self.handle_loop()
+
+                        if loop_clients == False:
                             # the loop callback is telling us to shutdown
                             break
+
+                        # update the events for any clients that were changed during the loop handler
+                        for client in loop_clients:
+                            modify_func(client._fileno, client._events & (~EVENT_LINGER))
 
                         # execute a timeout callback at most every [timeout interval] seconds
                         if self._timeout and now - self._timeout_interval > timeout_check:
