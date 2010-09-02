@@ -118,6 +118,9 @@ class Server:
         self._event_manager_register   = self._event_manager.register
         self._event_manager_unregister = self._event_manager.unregister
 
+        # update server with proper events
+        self.EVENT_LINGER = self._event_manager.EVENT_LINGER
+
         # update the client module with the proper events
         client.EVENT_LINGER = self._event_manager.EVENT_LINGER
         client.EVENT_READ   = self._event_manager.EVENT_READ
@@ -394,7 +397,7 @@ class Server:
         self._clients[client._fileno] = client
 
         if not client._is_channel or not client._is_blocking:
-            self._event_manager.register(client._fileno, client._events)
+            self._event_manager.register(client._fileno, client._events & (~self.EVENT_LINGER))
 
             self._is_serving_client = True
 
@@ -586,7 +589,7 @@ class Server:
 
                             # update the events for any clients that have timed out and are still going to be processed
                             for client in self.handle_timeout_check():
-                                modify_func(client._fileno, client._events)
+                                modify_func(client._fileno, client._events & (~EVENT_LINGER))
 
                     except Exception, e:
                         # an unhandled exception has been caught
@@ -631,7 +634,7 @@ class Server:
                             continue
 
                         # update the events
-                        modify_func(fileno, client._events)
+                        modify_func(fileno, client._events & (~EVENT_LINGER))
 
                     # update the client time
                     client._last_access_time = now
@@ -657,7 +660,7 @@ class Server:
                         continue
 
                     # update the events
-                    modify_func(fileno, client._events)
+                    modify_func(fileno, client._events & (~EVENT_LINGER))
 
                 # update the client time
                 client._last_access_time = now
