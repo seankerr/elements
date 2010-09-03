@@ -295,7 +295,7 @@ class Server:
         """
         This callback is executed at the top of each event manager loop.
 
-        @return (bool) A list of modified clients (or an empty list), if processing should continue, otherwise False.
+        @return (object) A list of modified clients (or an empty list), if processing should continue, otherwise False.
         """
 
         return []
