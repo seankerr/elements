@@ -107,7 +107,7 @@ class HttpClient (Client):
         self._request_count           = 0                   # count of served requests (only useful if persistence is
                                                             # enabled)
 
-        self.read_delimiter("\r\n", self.handle_request, 5000)
+        self.read_delimiter("\r\n", self.handle_request, server._max_request_length)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -426,7 +426,7 @@ class HttpClient (Client):
         self.in_headers = in_headers
 
         # parse headers
-        self.read_delimiter("\r\n\r\n", self.handle_headers, 10000)
+        self.read_delimiter("\r\n\r\n", self.handle_headers, self._server._max_headers_length)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -531,7 +531,7 @@ class HttpClient (Client):
         if self._is_allowing_persistence and self._persistence_type:
             # allowing another request
             self.clear_write_buffer()
-            self.read_delimiter("\r\n", self.handle_request, 5000)
+            self.read_delimiter("\r\n", self.handle_request, self._server._max_request_length)
 
             return
 
@@ -656,7 +656,8 @@ class HttpClient (Client):
 
 class HttpServer (Server):
 
-    def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, **kwargs):
+    def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, max_request_length=5000,
+                  max_headers_length=10000, **kwargs):
         """
         Create a new HttpServer instance.
 
@@ -664,11 +665,15 @@ class HttpServer (Server):
         @param upload_dir         (str) The absolute filesystem path to the directory where uploaded files will be
                                         placed.
         @param upload_buffer_size (int) The upload buffer size.
+        @param max_request_length (int) The maximum length of the initial request line.
+        @param max_headers_length (int) The maximum length for the headers.
         """
 
         Server.__init__(self, **kwargs)
 
         self._gmt_offset         = gmt_offset
+        self._max_headers_length = max_headers_length
+        self._max_request_length = max_request_length
         self._upload_buffer_size = upload_buffer_size
         self._upload_dir         = upload_dir
 
