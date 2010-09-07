@@ -54,7 +54,7 @@ class Server:
         @param umask            (octal)     The process user mask.
         @param chroot           (str)       The root directory into which the process will be forced.
         @param long_running     (bool)      Indicates that each client is long-running and only one client should be
-                                            handled at a time.
+                                            handled at a time per process.
         @param loop_interval    (int/float) The interval between loop calls.
         @param timeout          (int/float) The client idle timeout.
         @param timeout_interval (int)       The interval between checks for client timeouts.
