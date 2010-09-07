@@ -196,7 +196,7 @@ class Client:
 
         # there is more data to write
         # note: we speed up small writes by eliminating the seek/truncate/write on every call
-        if len(data) > 65535:
+        if self._write_index >= 65535:
             buffer.seek(0)
             buffer.truncate()
             buffer.write(data[self._write_index:])
@@ -296,13 +296,20 @@ class Client:
     def set_linger (self, linger):
         """
         Set the linger status.
+
+        If enabling linger, all events will be removed and the linger event is added. If disabling linger, all events
+        will be removed and the read event is added. When disabling linger it is necessary to setup a read handler in
+        order to receive notification.
         """
 
+        self._read_delimiter = None
+        self._read_length    = None
+
         if linger:
-            self._events |= EVENT_LINGER
+            self._events = EVENT_LINGER
 
         else:
-            self._events &= ~EVENT_LINGER
+            self._events = EVENT_READ
 
         self._server._event_manager_modify(self._fileno, self._events)
 
