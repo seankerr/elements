@@ -229,12 +229,14 @@ class Client:
 
         if pos > -1:
             # the delimiter has been found
-            self._read_delimiter  = None
+            self._read_delimiter = None
 
             if max_bytes and pos > max_bytes:
                 # the maximum byte limit has been reached
                 if not self.handle_max_bytes(max_bytes):
                     # max bytes callback has stopped client processing
+                    self.clear_events()
+
                     return
 
             pos += len(delimiter)
@@ -254,6 +256,8 @@ class Client:
 
             if not self.handle_max_bytes(max_bytes):
                 # max bytes callback has stopped client processing
+                self.clear_events()
+
                 return
 
             max_bytes = None
