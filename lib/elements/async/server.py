@@ -321,8 +321,6 @@ class Server:
             for channel in self._channels[pid]:
                 self.unregister_client(channel)
 
-                channel.handle_shutdown()
-
             del self._channels[pid]
 
         self.handle_worker_exited(pid, status)
