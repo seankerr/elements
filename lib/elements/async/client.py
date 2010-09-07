@@ -342,6 +342,7 @@ class ChannelClient (Client):
         Client.__init__(self, socket, None, server, None)
 
         self._is_blocking = False
+        self._is_channel  = True
         self._pid         = pid
 
 # ----------------------------------------------------------------------------------------------------------------------
