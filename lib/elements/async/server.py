@@ -429,7 +429,11 @@ class Server:
         # wait for all worker processes to exit
         if self._is_parent:
             for pid in self._channels:
-                os.kill(pid, signal.SIGINT)
+                try:
+                    os.kill(pid, signal.SIGINT)
+
+                except:
+                    pass
 
             for pid in self._channels:
                 try:
