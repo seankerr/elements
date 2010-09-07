@@ -315,10 +315,16 @@ class Server:
 
             return
 
-        # allow a child to exit
+        # allow a worker process to exit
         pid, status = os.wait()
 
-        del self._channels[pid]
+        if pid in self._channels:
+            for channel in self._channels[pid]:
+                self.unregister_client(channel)
+
+                channel.handle_shutdown()
+
+            del self._channels[pid]
 
         self.handle_worker_exited(pid, status)
 
@@ -426,21 +432,23 @@ class Server:
         for client in self._clients.values():
             self.unregister_client(client)
 
+        if not self._is_parent:
+            return
+
         # wait for all worker processes to exit
-        if self._is_parent:
-            for pid in self._channels:
-                try:
-                    os.kill(pid, signal.SIGINT)
+        for pid in self._channels:
+            try:
+                os.kill(pid, signal.SIGINT)
 
-                except:
-                    pass
+            except:
+                pass
 
-            for pid in self._channels:
-                try:
-                    self.handle_worker_exited(*os.wait())
+        for pid in self._channels:
+            try:
+                self.handle_worker_exited(*os.wait())
 
-                except:
-                    pass
+            except:
+                pass
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -686,10 +694,16 @@ class Server:
         @param client (Client) The client.
         """
 
-        self._event_manager_unregister(client._fileno)
+        if client._is_channel:
+            try:
+                self._channels[client._pid].remove(client)
 
-        if not client._is_channel and not client._is_host:
-            self._is_serving_client = False
+            except:
+                pass
+
+        self._is_serving_client = False
+
+        self._event_manager_unregister(client._fileno)
 
         del self._clients[client._fileno]
 
