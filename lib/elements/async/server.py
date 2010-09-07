@@ -41,9 +41,9 @@ from elements.core.exception import ServerException
 
 class Server:
 
-    def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, loop_interval=1,
-                  timeout=None, timeout_interval=10, worker_count=0, channel_count=1, event_manager=None,
-                  print_settings=True):
+    def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, long_running=False,
+                  loop_interval=1, timeout=None, timeout_interval=10, worker_count=0, channel_count=1,
+                  event_manager=None, print_settings=True):
         """
         Create a new Server instance.
 
@@ -53,6 +53,8 @@ class Server:
         @param group            (str)       The process group.
         @param umask            (octal)     The process user mask.
         @param chroot           (str)       The root directory into which the process will be forced.
+        @param long_running     (bool)      Indicates that each client is long-running and only one client should be
+                                            handled at a time.
         @param loop_interval    (int/float) The interval between loop calls.
         @param timeout          (int/float) The client idle timeout.
         @param timeout_interval (int)       The interval between checks for client timeouts.
@@ -75,7 +77,7 @@ class Server:
         self._hosts                    = []               # host client/server sockets
         self._is_daemon                = daemonize        # indicates that this is running as a daemon
         self._is_listening             = False            # indicates that this process is listening on all hosts
-        self._is_long_running          = False            # indicates that clients are long-running
+        self._is_long_running          = long_running     # indicates that clients are long-running
         self._is_parent                = True             # indicates that this process is the parent
         self._is_shutting_down         = False            # indicates that this server is shutting down
         self._is_serving_client        = False            # indicates that a client is being served
