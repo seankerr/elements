@@ -7,6 +7,6 @@
 
 APP_AUTHOR  = "Sean Kerr"
 APP_EMAIL   = "sean@code-box.org"
-APP_GIT     = "git://github.com/feti/Elements.git"
+APP_GIT     = "http://github.com/feti/Elements.git"
 APP_NAME    = "Elements"
 APP_VERSION = "0.1.1-alpha"
