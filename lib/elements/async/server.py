@@ -644,7 +644,7 @@ class Server:
                     client._last_access_time = now
 
             except socket.error, e:
-                if e[0] not in (errno.EAGAIN, errno.EWOULDBLOCK):
+                if e[0] not in (errno.EWOULDBLOCK, errno.EAGAIN):
                     # an unrecoverable socket error has occurred
                     unregister_client_func(client)
 
