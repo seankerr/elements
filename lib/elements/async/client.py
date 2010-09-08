@@ -14,8 +14,6 @@ import os
 import socket
 import time
 
-from os import O_NONBLOCK as o_nonblock
-
 from elements.core.exception import ChannelException
 from elements.core.exception import ClientException
 
