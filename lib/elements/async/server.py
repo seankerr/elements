@@ -7,6 +7,7 @@
 
 import errno
 import os
+import platform
 import select
 import signal
 import socket
@@ -176,8 +177,10 @@ class Server:
                 self.add_host(*host)
 
         # register signal handlers
-        signal.signal(signal.SIGCHLD, self.handle_signal)
-        signal.signal(signal.SIGHUP,  self.handle_signal)
+        if platform.system() != "Windows":
+            signal.signal(signal.SIGCHLD, self.handle_signal)
+            signal.signal(signal.SIGHUP,  self.handle_signal)
+
         signal.signal(signal.SIGINT,  self.handle_signal)
         signal.signal(signal.SIGTERM, self.handle_signal)
 
@@ -299,6 +302,11 @@ class Server:
         @param frame (object) The stack frame.
         """
 
+        if platform.system() == "Windows":
+            self._is_shutting_down = True
+
+            return
+
         if code != signal.SIGCHLD:
             self._is_shutting_down = True
 
@@ -411,6 +419,13 @@ class Server:
         """
         Unregister all clients and kill worker processes.
         """
+
+        if platform.system() == "Windows":
+            # unregister and shutdown all clients
+            for client in self._clients.values():
+                self.unregister_client(client)
+
+            return
 
         # remove the sigchld handler
         signal.signal(signal.SIGCHLD, signal.SIG_IGN)
