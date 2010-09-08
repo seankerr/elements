@@ -10,16 +10,6 @@ try:
 except:
     import StringIO
 
-try:
-    from fcntl import fcntl   as fcntl_func
-    from fcntl import F_GETFL as fcntl_getfl
-    from fcntl import F_SETFL as fcntl_setfl
-
-except:
-    from win32_support import fcntl   as fcntl_func
-    from win32_support import F_GETFL as fcntl_getfl
-    from win32_support import F_SETFL as fcntl_setfl
-
 import os
 import socket
 import time
@@ -69,7 +59,7 @@ class Client:
         self._write_index      = 0                      # write buffer index
 
         # disable blocking
-        fcntl_func(self._fileno, fcntl_setfl, fcntl_func(self._fileno, fcntl_getfl) | o_nonblock)
+        client_socket.setblocking(0)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -363,7 +353,7 @@ class BlockingChannelClient (ChannelClient):
         self._is_blocking = True
 
         # re-enable blocking
-        fcntl_func(socket.fileno(), fcntl_setfl, fcntl_func(socket.fileno(), fcntl_getfl) & ~o_nonblock)
+        socket.setblocking(1)
 
     # ------------------------------------------------------------------------------------------------------------------
 
