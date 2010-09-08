@@ -5,16 +5,6 @@
 #
 # Author: Sean Kerr <sean@code-box.org>
 
-try:
-    from fcntl import fcntl   as fcntl_func
-    from fcntl import F_GETFL as fcntl_getfl
-    from fcntl import F_SETFL as fcntl_setfl
-
-except:
-    from win32_support import fcntl   as fcntl_func
-    from win32_support import F_GETFL as fcntl_getfl
-    from win32_support import F_SETFL as fcntl_setfl
-
 import errno
 import os
 import select
@@ -205,7 +195,7 @@ class Server:
             host = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
             # disable blocking
-            fcntl_func(host.fileno(), fcntl_setfl, fcntl_func(host.fileno(), fcntl_getfl) | os.O_NONBLOCK)
+            host.setblocking(0)
 
             host.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             host.bind((ip, port))
@@ -468,8 +458,8 @@ class Server:
             pair = socket.socketpair()
 
             # disable blocking
-            fcntl_func(pair[0].fileno(), fcntl_setfl, fcntl_func(pair[0].fileno(), fcntl_getfl) | os.O_NONBLOCK)
-            fcntl_func(pair[1].fileno(), fcntl_setfl, fcntl_func(pair[1].fileno(), fcntl_getfl) | os.O_NONBLOCK)
+            pair[0].setblocking(0)
+            pair[1].setblocking(0)
 
             parent_sockets.append(pair[0])
             worker_sockets.append(pair[1])
