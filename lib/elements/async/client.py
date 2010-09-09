@@ -168,8 +168,8 @@ class Client:
         """
 
         buffer = self._write_buffer
-        data   = buffer.getvalue()
-        length = self._client_socket.send(data[self._write_index:])
+        data   = buffer.getvalue()[self._write_index:]
+        length = self._client_socket.send(data)
 
         # increase the write index (this helps cut back on small writes)
         self._write_index += length
