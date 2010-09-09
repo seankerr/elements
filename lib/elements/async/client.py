@@ -4,6 +4,7 @@
 # The full license is available in the LICENSE file that was distributed with this source code.
 #
 # Author: Sean Kerr <sean@code-box.org>
+# Author: Noah Fontes <nfontes@invectorate.com>
 
 try:
     import cStringIO as StringIO
@@ -75,8 +76,7 @@ class Client:
         Clear the write buffer.
         """
 
-        self._write_buffer.seek(0)
-        self._write_buffer.truncate()
+        self._write_buffer.truncate(0)
 
         self._write_index = 0
 
@@ -185,8 +185,7 @@ class Client:
         # there is more data to write
         # note: we speed up small writes by eliminating the seek/truncate/write on every call
         if self._write_index >= 65535:
-            buffer.seek(0)
-            buffer.truncate()
+            buffer.truncate(0)
             buffer.write(data[self._write_index:])
 
             self._write_index = 0
@@ -229,8 +228,7 @@ class Client:
 
             pos += len(delimiter)
 
-            buffer.seek(0)
-            buffer.truncate()
+            buffer.truncate(0)
             buffer.write(data[pos:])
 
             callback(data[:pos])
@@ -265,14 +263,14 @@ class Client:
         """
 
         buffer = self._read_buffer
-        data   = buffer.getvalue()
 
-        if len(data) >= length:
+        if buffer.tell() >= length:
             # the read buffer has met our length requirement
             self._read_length = None
 
-            buffer.seek(0)
-            buffer.truncate()
+            data = buffer.getvalue()
+
+            buffer.truncate(0)
             buffer.write(data[length:])
 
             callback(data[:length])
