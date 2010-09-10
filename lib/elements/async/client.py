@@ -185,8 +185,10 @@ class Client:
         # there is more data to write
         # note: we speed up small writes by eliminating the seek/truncate/write on every call
         if self._write_index >= 65535:
+            all_data = buffer.getvalue()
+
             buffer.truncate(0)
-            buffer.write(data[self._write_index:])
+            buffer.write(all_data[self._write_index:])
 
             self._write_index = 0
 
