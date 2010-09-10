@@ -168,13 +168,14 @@ class Client:
         """
 
         buffer = self._write_buffer
-        data   = buffer.getvalue()[self._write_index:]
-        length = self._client_socket.send(data)
+        data   = buffer.getvalue()
+        chunk  = data[self._write_index:]
+        length = self._client_socket.send(chunk)
 
         # increase the write index (this helps cut back on small writes)
         self._write_index += length
 
-        if length == len(data):
+        if length == len(chunk):
             # write buffer has been entirely written
             self._events &= ~EVENT_WRITE
 
@@ -185,10 +186,8 @@ class Client:
         # there is more data to write
         # note: we speed up small writes by eliminating the seek/truncate/write on every call
         if self._write_index >= 65535:
-            all_data = buffer.getvalue()
-
             buffer.truncate(0)
-            buffer.write(all_data[self._write_index:])
+            buffer.write(data[self._write_index:])
 
             self._write_index = 0
 
