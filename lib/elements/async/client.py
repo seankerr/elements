@@ -262,13 +262,12 @@ class Client:
         @param callback (method) The callback to execute once the length has been read entirely.
         """
 
-        buffer = self._read_buffer
-
-        if buffer.tell() >= length:
+        if self._read_buffer.tell() >= length:
             # the read buffer has met our length requirement
             self._read_length = None
 
-            data = buffer.getvalue()
+            buffer = self._read_buffer
+            data   = buffer.getvalue()
 
             buffer.truncate(0)
             buffer.write(data[length:])
