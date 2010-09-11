@@ -1,0 +1,7 @@
+# Python bytecode files
+*.pyc
+
+# setuptools components
+/build/
+/dist/
+*.egg-info
