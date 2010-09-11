@@ -1,0 +1,177 @@
+#! /usr/bin/env python
+#
+# This file is part of Elements.
+# Copyright (c) 2010 Sean Kerr. All rights reserved.
+#
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
+# Author: Noah Fontes <nfontes@invectorate.com>
+
+try:
+    import cStringIO as StringIO
+except ImportError:
+    import StringIO
+
+import os
+import random
+
+try:
+    import webob
+except ImportError:
+    pass
+
+from elements.async.impl.fastcgi import FastcgiClient
+from elements.async.impl.fastcgi import FastcgiServer
+
+def html_escape (value):
+    """
+    Escapes a given value by replacing any instances of &, >, < and " with their corresponding HTML entities.
+
+    If the given value is not iterable, this function is the identity function.
+
+    @param value (object) The value to escape.
+
+    @return (object) The value with the noted characters escaped.
+    """
+
+    if value is not None:
+        try:
+            table = { "&": "&amp;",
+                      ">": "&gt;",
+                      "<": "&lt;",
+                      '"': "&quot;" }
+            return "".join([table[c] if c in table else c for c in value])
+
+        except:
+            pass
+
+    return value
+
+def generate_item_writer (buffer):
+    """
+    Creates a small utility function to write a name/value 2-tuple into a file-like object with proper escaping for
+    HTML.
+
+    @param buffer (file) A file-like object to which the name and value will be written.
+
+    @return (function) A writer function.
+    """
+
+    def item_writer (item):
+        name, value = item
+        buffer.write("%s: <span style=\"color: #F00\">%s</span><br>" % (html_escape(name), html_escape(value)))
+
+    return item_writer
+
+class ExampleClient (FastcgiClient):
+
+    def handle_dispatch (self):
+        """
+        Handles a request, using the FastCGI client's standard output to create an acceptable response.
+        """
+
+        body = StringIO.StringIO()
+        body_item_writer = generate_item_writer(body)
+
+        result = StringIO.StringIO()
+
+        body.write("<h1>Welcome to ExampleServer (FastCGI)</h1>")
+
+        body.write("<h3>Pid: <span style=\"color: #F00\">%d</span></h3>" % os.getpid())
+
+        try:
+            wsgi_params = dict(self.params)
+            wsgi_params["wsgi.version"] = (1, 0)
+            wsgi_params["wsgi.input"] = self.stdin
+            wsgi_params["wsgi.errors"] = self.stderr
+            wsgi_params["wsgi.multithread"] = False
+            wsgi_params["wsgi.multiprocess"] = True
+
+            if "HTTPS" in self.params and self.params["HTTPS"].lower() in ("1", "on"):
+                wsgi_params["wsgi.url_scheme"] = "https"
+
+            else:
+                wsgi_params["wsgi.url_scheme"] = "http"
+
+            request = webob.Request(wsgi_params)
+            request.charset = "utf-8"
+
+            response = webob.Response()
+            response.content_type = "text/html"
+
+            body_item_writer(("using webob.Request", repr(request)))
+
+            body.write("<h3>Environment</h3>")
+            map(body_item_writer, { "Scheme":         request.scheme,
+                                    "Method":         request.method,
+                                    "Script name":    request.script_name,
+                                    "Path info":      request.path_info,
+                                    "Content length": request.content_length,
+                                    "Remote user":    request.remote_user,
+                                    "Remote address": request.remote_addr,
+                                    "Query string":   request.query_string,
+                                    "Server name":    request.server_name,
+                                    "Server port":    request.server_port }.items())
+
+            body.write("<h3>Headers</h3>")
+            map(body_item_writer, request.headers.items())
+
+            body.write("<h3>Cookies</h3>")
+            map(body_item_writer, request.cookies.items())
+
+            body.write("<h3>Parameters</h3>")
+            map(body_item_writer, request.params.items())
+
+            body.write("<h3>GET</h3>")
+            map(body_item_writer, request.GET.items())
+
+            body.write("<h3>POST</h3>")
+            map(body_item_writer, request.POST.iteritems())
+
+            response.body = body.getvalue()
+
+            # try for a cookie, too!
+            response.set_cookie("fastcgi_example", value = random.randint(1, 10))
+
+            generated_response = request.get_response(response)
+
+            result.write("%s %s\r\n" % (self.params["SERVER_PROTOCOL"], generated_response.status))
+
+            for header in generated_response.headerlist:
+                result.write("%s: %s\r\n" % header)
+
+            result.write("\r\n")
+
+            result.write(generated_response.body)
+
+        except NameError:
+            # webob doesn't exist, so use the params we have here instead
+            body.write("<h3>Raw Environment</h3>")
+            map(body_item_writer, self.params.items())
+
+            body.write("<h3>Raw Input</h3>")
+            body.write("<pre>%s</pre>" % html_escape(self.stdin.getvalue()))
+
+            result.write("%s 200 OK\r\n" % self.params["SERVER_PROTOCOL"])
+            result.write("Content-Type: text/html\r\n")
+            result.write("\r\n")
+            result.write(body.getvalue())
+
+        finally:
+            body.close()
+
+        self.stdout.write(result.getvalue())
+
+        result.close()
+
+class ExampleServer (FastcgiServer):
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new ExampleClient instance.
+        """
+
+        self.register_client(ExampleClient(client_socket, client_address, self, server_address))
+
+if __name__ == "__main__":
+    ExampleServer(hosts = [("0.0.0.0", 9010)]).start()
