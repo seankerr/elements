@@ -107,6 +107,10 @@ class HttpClient (Client):
         self._request_count           = 0                   # count of served requests (only useful if persistence is
                                                             # enabled)
 
+        # files variable must exist because it's access in handle_shutdown(), and handle_shutdown() is always called,
+        # even in the event that a timeout occurred before a request could physically be handled
+        self.files = None
+
         self.read_delimiter("\r\n", self.handle_request, server._max_request_length)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -363,6 +367,8 @@ class HttpClient (Client):
 
         @param data The data that has tentatively been found as the request line.
         """
+
+        print "woot"
 
         self._multipart_file    = None
         self._persistence_type  = None
