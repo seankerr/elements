@@ -345,9 +345,7 @@ class Server:
         for client in filter(lambda x: x._last_access_time < minimum_time and not x._is_channel and not x._is_host,
                              self._clients.values()):
 
-            client.handle_timeout(self._timeout)
-
-            if client._events == 0:
+            if not client.handle_timeout(self._timeout):
                 # handle timeout callback cleared events--so, we'll forcefully unregister the client
                 self.unregister_client(client)
 
