@@ -95,6 +95,8 @@ class _Record (object):
         self._type = type
         self._request_id = request_id
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def write (self, client):
         """
         Writes the content of this record to the given client's buffer.
@@ -107,6 +109,8 @@ class _Record (object):
 
         client.write(HEADER_STRUCT.pack(self._version, self._type, self._request_id, data_length, 0))
         client.write(data)
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def render (self):
         """
@@ -130,6 +134,8 @@ class _GetValuesResultRecord (_Record):
 
         _Record.__init__(self, FCGI_GET_VALUES_RESULT)
         self._results = results
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _write_nv_pair (self, name, value, destination):
         """
@@ -155,6 +161,8 @@ class _GetValuesResultRecord (_Record):
         destination.write(NAME_VALUE_PAIR_STRUCTS[flags].pack(name_length, value_length))
         destination.write(name)
         destination.write(value)
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def render (self):
         """
@@ -187,6 +195,8 @@ class _UnknownTypeRecord (_Record):
         _Record.__init__(self, FCGI_UNKNOWN_TYPE)
         self._unknown_type = unknown_type
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def render (self):
         """
         Creates a message body for FCGI_UNKNOWN_TYPE.
@@ -215,6 +225,8 @@ class _EndRequestRecord (_Record):
         self._application_status = application_status
         self._protocol_status    = protocol_status
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def render (self):
         """
         Creates a message body for FCGI_END_REQUEST.
@@ -240,6 +252,8 @@ class _StreamRecord (_Record):
 
         _Record.__init__(self, type, request_id)
         self._data = data
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def render (self):
         """
@@ -274,6 +288,8 @@ class _OutputWriter (object):
         self._type   = type
         self._reset()
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def write (self, data):
         """
         Writes the given data to the client.
@@ -288,6 +304,8 @@ class _OutputWriter (object):
 
                 data = data[65535:]
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def writelines (self, sequence):
         """
         Writes a sequence of data to the client.
@@ -301,12 +319,16 @@ class _OutputWriter (object):
         for data in sequence:
             self.write(data)
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def close (self):
         """
         Closes this stream by setting a flag preventing further output.
         """
 
         self._closed = True
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     @property
     def closed (self):
@@ -318,7 +340,13 @@ class _OutputWriter (object):
 
         return self._closed
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _reset (self):
+        """
+        Resets this object to a default state so it can be re-used.
+        """
+
         self._closed   = False
         self._has_data = False
 
@@ -445,6 +473,8 @@ class FastcgiClient (Client):
 
         self._write_record_and_flush(_GetValuesResultRecord(responses))
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _handle_record_unknown_type (self, header):
         """
         Handles any unknown management record type and sends an FCGI_UNKNOWN_TYPE response.
@@ -463,6 +493,8 @@ class FastcgiClient (Client):
         """
 
         raise ClientException("FastcgiClient#handle_dispatch() must be overriden")
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _maybe_dispatch (self):
         """
@@ -491,6 +523,8 @@ class FastcgiClient (Client):
 
         else:
             self._read_record()
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _handle_record_begin_request (self, header, data):
         """
@@ -536,6 +570,8 @@ class FastcgiClient (Client):
         else:
             self._write_record_and_flush(_EndRequestRecord(0, FCGI_UNKNOWN_ROLE, request_id))
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _handle_record_abort_request (self, header, data):
         """
         Handles a request to abort a given request. Since we execute requests serially, this method is a no-op.
@@ -545,6 +581,8 @@ class FastcgiClient (Client):
         """
 
         self._read_record()
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _handle_record_params (self, header, data):
         """
@@ -567,6 +605,8 @@ class FastcgiClient (Client):
             self._params_io.write(data)
 
         self._maybe_dispatch()
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _handle_record_stdin (self, header, data):
         """
@@ -635,6 +675,8 @@ class FastcgiClient (Client):
             else:
                 raise FastcgiException("Unexpected record type %d while trying to handle request", header["type"])
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _handle_record_header (self, data):
         """
         Decodes a record header and then attempts to read the length of the content and padding.
@@ -652,6 +694,8 @@ class FastcgiClient (Client):
                          "content_length": content_length }
 
         self.read_length(content_length + padding_length, self._handle_record)
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def _read_record (self):
         """
@@ -684,6 +728,8 @@ class FastcgiClient (Client):
             else:
                 self._events &= ~EVENT_READ
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def _write_record_and_flush (self, record):
         """
         Utility method to write a method and immediately flush the data stream afterwards.
@@ -693,6 +739,8 @@ class FastcgiClient (Client):
 
         self._write_record(record)
         self.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def handle_write_finished (self):
         """
@@ -716,6 +764,8 @@ class FastcgiServer (Server):
 
         Server.__init__(self, **kwargs)
 
+    # ------------------------------------------------------------------------------------------------------------------
+
     def handle_client (self, client_socket, client_address, server_address):
         """
         Registers a new FastcgiClient instance.
@@ -727,6 +777,8 @@ class FastcgiServer (Server):
         """
 
         raise NotImplementedError("FastcgiServer#handle_client() must be overridden")
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def handle_exception (self, exception, client = None):
         """
