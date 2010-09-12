@@ -154,10 +154,11 @@ class Client:
         This callback will be executed when this Client instance has been idle too long.
 
         @param timeout (int) The timeout.
+
+        @return (bool) True, if processing should continue, otherwise False.
         """
 
-        # clear all events so the client will be forcefully disconnected
-        self.clear_events()
+        return False
 
     # ------------------------------------------------------------------------------------------------------------------
 
