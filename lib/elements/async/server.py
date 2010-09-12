@@ -111,6 +111,10 @@ class Server:
         self._event_manager_register   = self._event_manager.register
         self._event_manager_unregister = self._event_manager.unregister
 
+        # update this server with the proper events
+        self.EVENT_READ   = self._event_manager.EVENT_READ
+        self.EVENT_WRITE  = self._event_manager.EVENT_WRITE
+
         # update the client module with the proper events
         client.EVENT_LINGER = self._event_manager.EVENT_LINGER
         client.EVENT_READ   = self._event_manager.EVENT_READ
@@ -334,20 +338,26 @@ class Server:
         now          = time()
         minimum_time = now - self._timeout
 
+        EVENT_READ = self.EVENT_READ
+
         # iterate all clients and find the ones that are timed out/idle
         # execute the timeout callback and determine what to do
         for client in filter(lambda x: x._last_access_time < minimum_time and not x._is_channel and not x._is_host,
                              self._clients.values()):
 
-            client._events = 0
+            client.handle_timeout(self._timeout)
 
-            if not client.handle_timeout(self._timeout):
+            if client._events == 0:
+                # handle timeout callback cleared events--so, we'll forcefully unregister the client
                 self.unregister_client(client)
 
                 continue
 
+            # update the client time
             client._last_access_time = now
 
+            # client is good and they're being appended to a list that will all have their fileno's updated in the
+            # event manager with their new events
             clients.append(client)
 
         return clients
