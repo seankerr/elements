@@ -85,6 +85,131 @@ PERSISTENCE_PROTOCOL   = 2
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class HttpAction:
+
+    def __init__ (self, server):
+        """
+        Create a new HttpAction instance.
+
+        @param server (HttpServer) The HttpServer instance.
+        """
+
+        self._server = server
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def connect (self, client):
+        """
+        Handle a CONNECT request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def delete (self, client):
+        """
+        Handle a DELETE request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get (self, client):
+        """
+        Handle a GET request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def head (self, client):
+        """
+        Handle a HEAD request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def options (self, client):
+        """
+        Handle a OPTIONS request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def post (self, client):
+        """
+        Handle a POST request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def put (self, client):
+        """
+        Handle a PUT request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def trace (self, client):
+        """
+        Handle a TRACE request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.response_code = HTTP_405
+
+        client.write("<h1>Method Not Allowed</h1>")
+        client.flush()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class HttpClient (Client):
 
     def __init__ (self, client_socket, client_address, server, server_address):
@@ -393,7 +518,11 @@ class HttpClient (Client):
                 raise HttpException("Bad Request", HTTP_400)
 
         # verify method and protocol
+        method   = method.upper()
         protocol = protocol.upper()
+
+        if method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
+            raise HttpException("Method Not Allowed", HTTP_405)
 
         if protocol not in ("HTTP/1.0", "HTTP/1.1"):
             raise HttpException("Bad Request", HTTP_400)
