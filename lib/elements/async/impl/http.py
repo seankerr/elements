@@ -9,6 +9,7 @@ import datetime
 import mimetypes
 import os
 import random
+import re
 import socket
 import string
 import time
@@ -87,14 +88,18 @@ PERSISTENCE_PROTOCOL   = 2
 
 class HttpAction:
 
-    def __init__ (self, server):
+    def __init__ (self, server, title="Method Not Allowed", response_code=HTTP_405):
         """
         Create a new HttpAction instance.
 
-        @param server (HttpServer) The HttpServer instance.
+        @param server        (HttpServer) The HttpServer instance.
+        @param title         (str)        The H1 title to display when this core action handles a request.
+        @param response_code (str)        The response code to use when this core action handles a request.
         """
 
-        self._server = server
+        self._server         = server
+        self.__response_code = response_code
+        self.__title         = title
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -105,9 +110,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -119,9 +123,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -133,9 +136,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -147,9 +149,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -161,9 +162,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -175,9 +175,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -189,9 +188,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -203,9 +201,8 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.response_code = HTTP_405
-
-        client.write("<h1>Method Not Allowed</h1>")
+        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
+                                                                   self.__title))
         client.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -341,7 +338,10 @@ class HttpClient (Client):
                     content_length = int(in_headers["HTTP_CONTENT_LENGTH"])
 
                 except:
-                    raise HttpException("Length Required", HTTP_411)
+                    # length required
+                    self._server._error_actions[HTTP_411][1].get(self)
+
+                    return
 
                 # parse content
                 self.read_length(content_length, self.handle_urlencoded_content)
@@ -352,11 +352,9 @@ class HttpClient (Client):
 
                 self.read_length(len(self._multipart_boundary), self.handle_multipart_boundary)
 
-        except HttpException:
-            raise
-
         except:
-            raise HttpException("Bad Request", HTTP_400)
+            # bad request
+            self._server._error_actions[HTTP_400][1].get(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -369,7 +367,8 @@ class HttpClient (Client):
         @return (bool) True, if processing should continue, otherwise False.
         """
 
-        raise HttpException("Bad Request", HTTP_400)
+        # bad request
+        self._server._error_actions[HTTP_400][1].get(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -455,11 +454,9 @@ class HttpClient (Client):
 
             self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
 
-        except ElementsException:
-            raise
-
         except:
-            raise HttpException("Bad Request", HTTP_400)
+            # bad request
+            self._server._error_actions[HTTP_400][1].get(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -482,7 +479,8 @@ class HttpClient (Client):
 
             return
 
-        raise HttpException("Bad Request", HTTP_400)
+        # bad request
+        self._server._error_actions[HTTP_400][1].get(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -515,17 +513,26 @@ class HttpClient (Client):
                 protocol    = "HTTP/1.0"
 
             except:
-                raise HttpException("Bad Request", HTTP_400)
+                # bad request
+                self._server._error_actions[HTTP_400][1].get(self)
+
+                return
 
         # verify method and protocol
         method   = method.upper()
         protocol = protocol.upper()
 
         if method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
-            raise HttpException("Method Not Allowed", HTTP_405)
+            # method not allowed
+            self._server._error_actions[HTTP_405][1].get(self)
+
+            return
 
         if protocol not in ("HTTP/1.0", "HTTP/1.1"):
-            raise HttpException("Bad Request", HTTP_400)
+            # http protocol not supported
+            self._server._error_actions[HTTP_505][1].get(self)
+
+            return
 
         # initialize headers
         in_headers = { "HTTP_CONTENT_TYPE": "text/plain",
@@ -810,6 +817,39 @@ class HttpServer (Server):
         self._upload_buffer_size = upload_buffer_size
         self._upload_dir         = upload_dir
 
+        # error actions
+        self._error_actions = { HTTP_400: (None, HttpAction(self, "400 Bad Request", HTTP_400)),
+                                HTTP_401: (None, HttpAction(self, "401 Unauthorized", HTTP_401)),
+                                HTTP_402: (None, HttpAction(self, "402 Payment Required", HTTP_402)),
+                                HTTP_403: (None, HttpAction(self, "403 Forbidden", HTTP_403)),
+                                HTTP_404: (None, HttpAction(self, "404 Not Found", HTTP_404)),
+                                HTTP_405: (None, HttpAction(self, "405 Method Not Allowed", HTTP_405)),
+                                HTTP_406: (None, HttpAction(self, "406 Not Acceptable", HTTP_406)),
+                                HTTP_407: (None, HttpAction(self, "407 Proxy Authentication Required", HTTP_407)),
+                                HTTP_408: (None, HttpAction(self, "408 Request Timeout", HTTP_408)),
+                                HTTP_409: (None, HttpAction(self, "409 Conflict", HTTP_409)),
+                                HTTP_410: (None, HttpAction(self, "410 Gone", HTTP_410)),
+                                HTTP_411: (None, HttpAction(self, "411 Length Required", HTTP_411)),
+                                HTTP_412: (None, HttpAction(self, "412 Precondition Failed", HTTP_412)),
+                                HTTP_413: (None, HttpAction(self, "413 Request Entity Too Large", HTTP_413)),
+                                HTTP_414: (None, HttpAction(self, "414 Request-URI Too Long", HTTP_414)),
+                                HTTP_415: (None, HttpAction(self, "415 Unsupported Media Type", HTTP_415)),
+                                HTTP_416: (None, HttpAction(self, "416 Requested Range Not Satisfiable", HTTP_416)),
+                                HTTP_417: (None, HttpAction(self, "417 Expectation Failed", HTTP_417)),
+                                HTTP_422: (None, HttpAction(self, "422 Unprocessable Entity", HTTP_422)),
+                                HTTP_423: (None, HttpAction(self, "423 Locked", HTTP_423)),
+                                HTTP_424: (None, HttpAction(self, "424 Failed Dependency", HTTP_424)),
+                                HTTP_426: (None, HttpAction(self, "426 Upgrade Required", HTTP_426)),
+                                HTTP_500: (None, HttpAction(self, "500 Internal Server Error", HTTP_500)),
+                                HTTP_501: (None, HttpAction(self, "501 Not Implemented", HTTP_501)),
+                                HTTP_502: (None, HttpAction(self, "502 Bad Gateway", HTTP_502)),
+                                HTTP_503: (None, HttpAction(self, "503 Service Unavailable", HTTP_503)),
+                                HTTP_504: (None, HttpAction(self, "504 Gateway Timeout", HTTP_504)),
+                                HTTP_505: (None, HttpAction(self, "505 HTTP Version Not Supported", HTTP_505)),
+                                HTTP_506: (None, HttpAction(self, "506 Variant Also Negotiates", HTTP_506)),
+                                HTTP_507: (None, HttpAction(self, "507 Insufficient Storage", HTTP_507)),
+                                HTTP_510: (None, HttpAction(self, "510 Not Extended", HTTP_510)) }
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def handle_client (self, client_socket, client_address, server_address):
@@ -849,3 +889,103 @@ class HttpServer (Server):
                          elements.APP_NAME)
 
         client.flush()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class RoutingHttpClient (HttpClient):
+
+    def handle_dispatch (self):
+        """
+        This callback is executed when the request has been parsed and needs dispatched to a handler.
+        """
+
+        route           = self.in_headers["SCRIPT_NAME"].split(":", 1)
+        pattern, action = self._server._routes.get(route[0], self._server._error_actions[HTTP_404])
+
+        if not pattern:
+            # nothing to validate
+            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+
+            return
+
+        # check for expected data
+        if len(route) < 1:
+            # route didn't contain data, so it's automatically invalidated (serve 404 as if the url doesn't exist)
+            pattern, action = self._server._error_actions[HTTP_404]
+
+            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+
+            return
+
+        match = pattern.match(route[1])
+
+        # validate data
+        if not match:
+            # data did not validate successfully (serve 404 as if the url doesn't exist)
+            pattern, action = self._server._error_actions[HTTP_404]
+
+            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+
+            return
+
+        # data validated successfully
+        self.params.update(match.groupdict())
+
+        getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class RoutingHttpServer (HttpServer):
+
+    def __init__ (self, routes, **kwargs):
+        """
+        Create a new RoutingHttpServer instance.
+
+        @param routes (dict) A key->(validation, route) mapping.
+        """
+
+        HttpServer.__init__(self, **kwargs)
+
+        self._routes = {}
+
+        # compile routes
+        for script_name, details in routes.items():
+            if type(script_name) != str:
+                raise ServerException("Invalid route")
+
+            if type(details) in (list, tuple):
+                # validation required for this route
+                pattern, action = details
+
+                if type(pattern) != str:
+                    raise ServerException("Regex pattern for route '%s' must be a string" % script_name)
+
+                if not issubclass(action, HttpAction):
+                    raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
+
+                try:
+                    self._routes[script_name] = (re.compile(pattern), action(self, "Method Not Supported", HTTP_405))
+
+                except Exception, e:
+                    raise ServerException("Regex pattern error for route '%s': %s" % (script_name, str(e)))
+
+            elif issubclass(details, HttpAction):
+                # no validation for this route
+                self._routes[script_name] = (None, details("Method Not Supported", HTTP_405))
+
+            else:
+                raise ServerException("Invalid details for route '%s'" % script_name)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new RoutingHttpClient instance.
+
+        @param client_socket  (socket) The client socket.
+        @param client_address (tuple)  A two-part tuple containing the client ip and port.
+        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
+                                       made a connection.
+        """
+
+        self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
