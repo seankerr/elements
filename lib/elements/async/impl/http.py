@@ -948,6 +948,9 @@ class RoutingHttpServer (HttpServer):
 
         self._routes = {}
 
+        if type(routes) != dict:
+            raise ServerException("Routes must be an instance of dict")
+
         # compile routes
         for script_name, details in routes.items():
             if type(script_name) != str:
@@ -964,6 +967,10 @@ class RoutingHttpServer (HttpServer):
                     raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
 
                 try:
+                    # take simplified group names and convert them to regex-style group names
+                    for match in re.findall("\((?P<name>[a-z][a-z0-9\-]+):(?P<pattern>.*?)\)", pattern, re.I):
+                        pattern = pattern.replace("(%s:%s)" % match, "(?P<%s>%s)" % match)
+
                     self._routes[script_name] = (re.compile(pattern), action(self, "Method Not Supported", HTTP_405))
 
                 except Exception, e:
