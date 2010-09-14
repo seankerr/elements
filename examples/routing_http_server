@@ -62,4 +62,4 @@ class ExampleValidatingAction (HttpAction):
 # start the server
 RoutingHttpServer(hosts=[("0.0.0.0", 8080)],
                   routes={ "/":         ExampleAction,
-                           "/validate": ("(?P<number>\d+)/(?P<word>\w+)", ExampleValidatingAction) }).start()
+                           "/validate": ("(number:\d+)/(word:\w+)", ExampleValidatingAction) }).start()
