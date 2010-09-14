@@ -26,6 +26,7 @@ class ExampleAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
+        client.compose_headers()
         client.write("GET served")
         client.flush()
 
@@ -38,6 +39,7 @@ class ExampleAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
+        client.compose_headers()
         client.write("POST served")
         client.flush()
 
@@ -54,6 +56,7 @@ class ExampleValidatingAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
+        client.compose_headers()
         client.write("Parameters: " + str(client.params))
         client.flush()
 
