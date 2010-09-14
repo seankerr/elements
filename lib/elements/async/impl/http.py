@@ -420,10 +420,9 @@ class HttpClient (Client):
 
             # open a temp file to store the upload
             chars     = "".join((string.letters, string.digits))
-            temp_name = "".join([random.choice(chars) for x in xrange(0, 25)])
+            temp_name = "/".join((self._server._upload_dir, "".join([random.choice(chars) for x in xrange(0, 25)])))
 
             file = { "error":      None,
-                     "error_code": None,
                      "filename":   disposition[pos:disposition.find("\"", pos)],
                      "size":       0,
                      "temp_name":  temp_name }
@@ -450,7 +449,9 @@ class HttpClient (Client):
             else:
                 self.files[name] = file
 
-            self._multipart_file = open("/".join((self._server._upload_dir, temp_name)), "wb+")
+            self._multipart_file         = open(temp_name, "wb+")
+            self._multipart_file_is_null = False
+            self._multipart_file_size    = 0
 
             self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
 
@@ -576,7 +577,7 @@ class HttpClient (Client):
         """
 
         # close the current multipart upload file pointer if one exists
-        if self._multipart_file:
+        if self._multipart_file and not self._multipart_file_is_null:
             try:
                 self._multipart_file.close()
 
@@ -585,13 +586,13 @@ class HttpClient (Client):
 
         # delete all temp files
         if self.files:
-            for file in self.files:
+            for file in self.files.values():
                 if type(file) != list:
                     file = [file]
 
                 for file in file:
                     try:
-                        os.unlink("/".join((self._server._upload_dir, file["temp_name"])))
+                        os.unlink(file["temp_name"])
 
                     except:
                         pass
@@ -721,22 +722,35 @@ class HttpClient (Client):
 
         else:
             # file upload
+            file_dict = self.files[name]
+
+            if type(file_dict) == list:
+                file_dict = file_dict[-1]
+
             if pos > -1:
                 # boundary has been found, write the buffer minus 2 bytes (for \r\n) to the file
                 self._multipart_file = None
                 self.read_delimiter  = self._orig_read_delimiter
 
-                file.write(data[:pos - 2])
-                file.flush()
-                file.close()
+                chunk = data[:pos - 2]
+
+                if not self._multipart_file_is_null:
+                    # flush end contents
+                    file.write(chunk)
+                    file.flush()
+                    file.close()
+
+                    self._multipart_file_size += len(chunk)
+
+                    if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
+                        file_dict["error"] = True
 
                 buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
 
-                file         = self.files[self._multipart_name][-1]
-                file["size"] = os.stat("/".join((self._server._upload_dir, file["temp_name"]))).st_size
+                file_dict["size"] = os.stat(file_dict["temp_name"]).st_size
 
-                self.handle_upload_finished(file)
+                self.handle_upload_finished(file_dict)
 
                 self.read_length(2, callback)
 
@@ -745,13 +759,30 @@ class HttpClient (Client):
             # boundary has not been found
             if len(data) >= self._server._upload_buffer_size:
                 # flush the buffer to file
-                file.write(data[:-len(delimiter)])
-                file.flush()
+                chunk = data[:-len(delimiter)]
+
+                self._multipart_file_size += len(chunk)
+
+                if not self._multipart_file_is_null:
+                    file.write(chunk)
+                    file.flush()
 
                 buffer.truncate(0)
                 buffer.write(data[len(data) - len(delimiter):])
 
-                self.handle_upload_flushed(self.files[self._multipart_name][-1])
+                # check file size limit
+                if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
+                    if not self._multipart_file_is_null:
+                        # file is too large
+                        file.close()
+
+                        file_dict["error"] = True
+
+                        self._multipart_file_is_null = True
+
+                else:
+                    # file is ok, notify the client
+                    self.handle_upload_flushed(file_dict)
 
         self._read_callback  = callback
         self._read_delimiter = delimiter
@@ -793,8 +824,8 @@ class HttpClient (Client):
 
 class HttpServer (Server):
 
-    def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, max_request_length=5000,
-                  max_headers_length=10000, **kwargs):
+    def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, max_upload_size=None,
+                  max_request_length=5000, max_headers_length=10000, **kwargs):
         """
         Create a new HttpServer instance.
 
@@ -802,6 +833,7 @@ class HttpServer (Server):
         @param upload_dir         (str) The absolute filesystem path to the directory where uploaded files will be
                                         placed.
         @param upload_buffer_size (int) The upload buffer size.
+        @param max_upload_size    (int) The maximum file upload size.
         @param max_request_length (int) The maximum length of the initial request line.
         @param max_headers_length (int) The maximum length for the headers.
         """
@@ -811,6 +843,7 @@ class HttpServer (Server):
         self._gmt_offset         = gmt_offset
         self._max_headers_length = max_headers_length
         self._max_request_length = max_request_length
+        self._max_upload_size    = max_upload_size
         self._upload_buffer_size = upload_buffer_size
         self._upload_dir         = upload_dir
 
