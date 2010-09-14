@@ -712,8 +712,7 @@ class HttpClient (Client):
 
                 self.read_delimiter = self._orig_read_delimiter
 
-                buffer.seek(0)
-                buffer.truncate()
+                buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
 
                 self.read_length(2, callback)
@@ -731,8 +730,7 @@ class HttpClient (Client):
                 file.flush()
                 file.close()
 
-                buffer.seek(0)
-                buffer.truncate()
+                buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
 
                 file         = self.files[self._multipart_name][-1]
@@ -750,8 +748,7 @@ class HttpClient (Client):
                 file.write(data[:-len(delimiter)])
                 file.flush()
 
-                buffer.seek(0)
-                buffer.truncate()
+                buffer.truncate(0)
                 buffer.write(data[len(data) - len(delimiter):])
 
                 self.handle_upload_flushed(self.files[self._multipart_name][-1])
