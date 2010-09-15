@@ -80,6 +80,14 @@ HTTP_507 = "507 Insufficient Storage"
 HTTP_510 = "510 Not Extended"
 
 # ----------------------------------------------------------------------------------------------------------------------
+# ERROR CODES
+# ----------------------------------------------------------------------------------------------------------------------
+
+ERROR_UPLOAD_MAX_SIZE = 1
+
+# ----------------------------------------------------------------------------------------------------------------------
+# PERSISTENCE TYPES
+# ----------------------------------------------------------------------------------------------------------------------
 
 PERSISTENCE_KEEP_ALIVE = 1
 PERSISTENCE_PROTOCOL   = 2
@@ -743,7 +751,8 @@ class HttpClient (Client):
                     self._multipart_file_size += len(chunk)
 
                     if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
-                        file_dict["error"] = True
+                        # upload is too big
+                        file_dict["error"] = ERROR_UPLOAD_MAX_SIZE
 
                 buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
@@ -773,11 +782,10 @@ class HttpClient (Client):
                 # check file size limit
                 if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
                     if not self._multipart_file_is_null:
-                        # file is too large
+                        # upload is too big
                         file.close()
 
-                        file_dict["error"] = True
-
+                        file_dict["error"]           = ERROR_UPLOAD_MAX_SIZE
                         self._multipart_file_is_null = True
 
                 else:
