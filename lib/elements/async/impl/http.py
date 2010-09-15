@@ -239,7 +239,7 @@ class HttpClient (Client):
 
         # files variable must exist because it's access in handle_shutdown(), and handle_shutdown() is always called,
         # even in the event that a timeout occurred before a request could physically be handled
-        self.files = None
+        self.__files = []
 
         self.read_delimiter("\r\n", self.handle_request, server._max_request_length)
 
@@ -435,6 +435,9 @@ class HttpClient (Client):
                      "size":       0,
                      "temp_name":  temp_name }
 
+            # add temp filename to list
+            self.__files.append(temp_name)
+
             # determine mimetype
             mimetype = mimetypes.guess_type(file["filename"])
 
@@ -500,6 +503,7 @@ class HttpClient (Client):
         @param data The data that has tentatively been found as the request line.
         """
 
+        self.__files            = []
         self._multipart_file    = None
         self._persistence_type  = None
         self._request_count    += 1
@@ -593,17 +597,12 @@ class HttpClient (Client):
                 pass
 
         # delete all temp files
-        if self.files:
-            for file in self.files.values():
-                if type(file) != list:
-                    file = [file]
+        for file in self.__files:
+            try:
+                os.unlink(file)
 
-                for file in file:
-                    try:
-                        os.unlink(file["temp_name"])
-
-                    except:
-                        pass
+            except:
+                pass
 
         Client.handle_shutdown(self)
 
