@@ -426,6 +426,10 @@ class HttpClient (Client):
             if not self.files:
                 self.files = {}
 
+            # enlarge the read size so uploads are quicker
+            self._orig_read_size = self._read_size
+            self._read_size      = 65535
+
             # open a temp file to store the upload
             chars     = "".join((string.letters, string.digits))
             temp_name = "/".join((self._server._upload_dir, "".join([random.choice(chars) for x in xrange(0, 25)])))
@@ -460,9 +464,9 @@ class HttpClient (Client):
             else:
                 self.files[name] = file
 
-            self._multipart_file         = open(temp_name, "wb+")
-            self._multipart_file_is_null = False
-            self._multipart_file_size    = 0
+            self._is_multipart_maxed  = False
+            self._multipart_file      = open(temp_name, "wb+")
+            self._multipart_file_size = 0
 
             self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
 
@@ -589,7 +593,7 @@ class HttpClient (Client):
         """
 
         # close the current multipart upload file pointer if one exists
-        if self._multipart_file and not self._multipart_file_is_null:
+        if self._multipart_file and not self._is_multipart_maxed:
             try:
                 self._multipart_file.close()
 
@@ -697,26 +701,26 @@ class HttpClient (Client):
         @param max_bytes (int)    The maximum byte limit to read.
         """
 
-        buffer = self._read_buffer
-        data   = buffer.getvalue()
-        file   = self._multipart_file
-        name   = self._multipart_name
-        params = self.params
-        pos    = data.find(delimiter)
+        buffer         = self._read_buffer
+        data           = buffer.getvalue()
+        multipart_file = self._multipart_file
+        multipart_name = self._multipart_name
+        params         = self.params
+        pos            = data.find(delimiter)
 
-        if not self._multipart_file:
+        if not multipart_file:
             # form field
             if pos > -1:
                 # boundary has been found
-                if name in params:
-                    if type(params[name]) != list:
+                if multipart_name in params:
+                    if type(params[multipart_name]) != list:
                         # param already existed, but wasn't a list so let's convert it
-                        params[name] = [params[name]]
+                        params[multipart_name] = [params[multipart_name]]
 
-                    params[name].append(data[:pos - 2])
+                    params[multipart_name].append(data[:pos - 2])
 
                 else:
-                    params[self._multipart_name] = data[:pos - 2]
+                    params[multipart_name] = data[:pos - 2]
 
                 self.read_delimiter = self._orig_read_delimiter
 
@@ -729,10 +733,10 @@ class HttpClient (Client):
 
         else:
             # file upload
-            file_dict = self.files[name]
+            file = self.files[multipart_name]
 
-            if type(file_dict) == list:
-                file_dict = file_dict[-1]
+            if type(file) == list:
+                file = file[-1]
 
             if pos > -1:
                 # boundary has been found, write the buffer minus 2 bytes (for \r\n) to the file
@@ -741,24 +745,26 @@ class HttpClient (Client):
 
                 chunk = data[:pos - 2]
 
-                if not self._multipart_file_is_null:
+                if not self._is_multipart_maxed:
                     # flush end contents
-                    file.write(chunk)
-                    file.flush()
-                    file.close()
+                    multipart_file.write(chunk)
+                    multipart_file.flush()
+                    multipart_file.close()
+
+                    self._read_size = self._orig_read_size
 
                     self._multipart_file_size += len(chunk)
 
                     if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
                         # upload is too big
-                        file_dict["error"] = ERROR_UPLOAD_MAX_SIZE
+                        file["error"] = ERROR_UPLOAD_MAX_SIZE
 
                 buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
 
-                file_dict["size"] = os.stat(file_dict["temp_name"]).st_size
+                file["size"] = os.stat(file["temp_name"]).st_size
 
-                self.handle_upload_finished(file_dict)
+                self.handle_upload_finished(file)
 
                 self.read_length(2, callback)
 
@@ -771,25 +777,25 @@ class HttpClient (Client):
 
                 self._multipart_file_size += len(chunk)
 
-                if not self._multipart_file_is_null:
-                    file.write(chunk)
-                    file.flush()
+                if not self._is_multipart_maxed:
+                    multipart_file.write(chunk)
+                    multipart_file.flush()
 
                 buffer.truncate(0)
                 buffer.write(data[len(data) - len(delimiter):])
 
                 # check file size limit
                 if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
-                    if not self._multipart_file_is_null:
+                    if not self._is_multipart_maxed:
                         # upload is too big
-                        file.close()
+                        multipart_file.close()
 
-                        file_dict["error"]           = ERROR_UPLOAD_MAX_SIZE
-                        self._multipart_file_is_null = True
+                        file["error"]            = ERROR_UPLOAD_MAX_SIZE
+                        self._is_multipart_maxed = True
 
                 else:
                     # file is ok, notify the client
-                    self.handle_upload_flushed(file_dict)
+                    self.handle_upload_flushed(file)
 
         self._read_callback  = callback
         self._read_delimiter = delimiter
