@@ -45,6 +45,47 @@ class ExampleAction (HttpAction):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class ExampleArgsAction (HttpAction):
+
+    def __init__ (self, sentence, **kwargs):
+        """
+        Create a new ExampleArgsAction instance.
+
+        @param sentence (str) The sentence to repeat to the client.
+        """
+
+        HttpAction.__init__(self, **kwargs)
+
+        self._sentence = sentence
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get (self, client):
+        """
+        Handle a GET request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.compose_headers()
+        client.write(self._sentence)
+        client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def post (self, client):
+        """
+        Handle a GET request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        client.compose_headers()
+        client.write(self._sentence)
+        client.flush()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class ExampleValidatingAction (HttpAction):
 
     def get (self, client):
@@ -64,5 +105,6 @@ class ExampleValidatingAction (HttpAction):
 
 # start the server
 RoutingHttpServer(hosts=[("0.0.0.0", 8080)],
-                  routes={ "/":         ExampleAction,
+                  routes={ "/":         (ExampleAction, ),
+                           "/sentence": (ExampleArgsAction, {"sentence": "Hello, world! This is ExampleArgsAction!"}),
                            "/validate": ("(number:\d+)/(word:\w+)", ExampleValidatingAction) }).start()
