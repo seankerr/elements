@@ -86,11 +86,15 @@ HTTP_510 = "510 Not Extended"
 ERROR_UPLOAD_MAX_SIZE = 1
 
 # ----------------------------------------------------------------------------------------------------------------------
-# PERSISTENCE TYPES
+# MISC SETTINGS
 # ----------------------------------------------------------------------------------------------------------------------
+
+FILE_READ_SIZE = 131070
 
 PERSISTENCE_KEEP_ALIVE = 1
 PERSISTENCE_PROTOCOL   = 2
+
+# ----------------------------------------------------------------------------------------------------------------------
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -432,7 +436,7 @@ class HttpClient (Client):
             if content_length >= 1048576:
                 # content is at least a meg, use a rather large read size
                 self._orig_read_size = self._read_size
-                self._read_size      = 131072
+                self._read_size      = 131070
 
             else:
                 # content is potentially large, use a moderate read size
@@ -520,6 +524,7 @@ class HttpClient (Client):
         self._multipart_file    = None
         self._persistence_type  = None
         self._request_count    += 1
+        self._static_file       = None
         self.content_type       = "text/html"
         self.files              = None
         self.in_cookies         = {}
@@ -676,15 +681,34 @@ class HttpClient (Client):
         This callback will be executed when the entire write buffer has been written.
         """
 
-        if self._is_allowing_persistence and self._persistence_type:
-            # allowing another request
-            self.clear_write_buffer()
-            self.read_delimiter("\r\n", self.handle_request, self._server._max_request_length)
+        if self._static_file:
+            # serving a static file
+            data = self._static_file.read(FILE_READ_SIZE)
 
-            return
+            if len(data) > 0:
+                # more data to write
+                self.write(data)
+                self.flush()
 
-        # clear the events so the server inits the shutdown sequence
-        self.clear_events()
+                return
+
+            # finished reading file
+            self._static_file.close()
+
+            self._static_file = None
+
+            self.clear_events()
+
+        else:
+            if self._is_allowing_persistence and self._persistence_type:
+                # allowing another request
+                self.clear_write_buffer()
+                self.read_delimiter("\r\n", self.handle_request, self._server._max_request_length)
+
+                return
+
+            # clear the events so the server inits the shutdown sequence
+            self.clear_events()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -824,6 +848,52 @@ class HttpClient (Client):
             cookie += "; secure"
 
         self.out_cookies[name] = cookie
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def serve_static_file (self, path, filename=None):
+        """
+        Serve a static file.
+
+        @param path     (str) The absolute filesystem path to the file.
+        @param filename (str) A substitute download filename.
+
+        @return (bool) True, if the file will be served, otherwise False.
+        """
+
+        try:
+            file = open(path, "rb")
+
+            self._static_file = file
+
+            if not filename:
+                filename = os.path.basename(path)
+
+            self.out_headers["Content-Disposition"] = "attachment; filename=%s" % filename
+
+            # determine mimetype
+            mimetype = mimetypes.guess_type(path)
+
+            if mimetype[0]:
+                self.content_type = mimetype[0]
+
+            elif mimetype[1]:
+                self.content_type = "+".join(("text/", mimetype[1]))
+
+            else:
+                self.content_type = "text/plain"
+
+            self.compose_headers()
+
+            # write first portion of file
+            self.write(file.read(FILE_READ_SIZE))
+            self.flush()
+
+            return True
+
+        except:
+            # file doesn't exist or permission denied
+            return False
 
 # ----------------------------------------------------------------------------------------------------------------------
 
