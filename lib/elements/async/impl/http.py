@@ -427,8 +427,17 @@ class HttpClient (Client):
                 self.files = {}
 
             # enlarge the read size so uploads are quicker
-            self._orig_read_size = self._read_size
-            self._read_size      = 65535
+            content_length = int(self.in_headers.get("HTTP_CONTENT_LENGTH", 0))
+
+            if content_length >= 1048576:
+                # content is at least a meg, use a rather large read size
+                self._orig_read_size = self._read_size
+                self._read_size      = 131072
+
+            else:
+                # content is potentially large, use a moderate read size
+                self._orig_read_size = self._read_size
+                self._read_size      = 65535
 
             # open a temp file to store the upload
             chars     = "".join((string.letters, string.digits))
@@ -625,19 +634,6 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_upload_flushed (self, file):
-        """
-        This callback is executed when an upload file has been flushed, but still is not finished.
-
-        @param file (dict) The dict of upload details.
-
-        @return (bool) True, if upload processing should continue, otherwise False.
-        """
-
-        return True
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def handle_urlencoded_content (self, data):
         """
         This callback is executed when urlencoded content is ready to be parsed.
@@ -785,17 +781,13 @@ class HttpClient (Client):
                 buffer.write(data[len(data) - len(delimiter):])
 
                 # check file size limit
-                if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
-                    if not self._is_multipart_maxed:
-                        # upload is too big
-                        multipart_file.close()
+                if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size and \
+                   not self._is_multipart_maxed:
+                    # upload is too big
+                    multipart_file.close()
 
-                        file["error"]            = ERROR_UPLOAD_MAX_SIZE
-                        self._is_multipart_maxed = True
-
-                else:
-                    # file is ok, notify the client
-                    self.handle_upload_flushed(file)
+                    file["error"]            = ERROR_UPLOAD_MAX_SIZE
+                    self._is_multipart_maxed = True
 
         self._read_callback  = callback
         self._read_delimiter = delimiter
