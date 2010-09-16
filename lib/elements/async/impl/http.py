@@ -944,7 +944,7 @@ class RoutingHttpClient (HttpClient):
             return
 
         # check for expected data
-        if len(route) < 1:
+        if len(route) == 1:
             # route didn't contain data, so it's automatically invalidated (serve 404 as if the url doesn't exist)
             pattern, action = self._server._error_actions[HTTP_404]
 
