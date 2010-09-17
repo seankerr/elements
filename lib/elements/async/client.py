@@ -356,6 +356,8 @@ class BlockingChannelClient (ChannelClient):
     def write (self, data):
         """
         Immediately write data.
+
+        @param data (str) The data.
         """
 
         raise ChannelException("BlockingChannelClient.write() must be overridden")
