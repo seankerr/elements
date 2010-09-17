@@ -775,6 +775,8 @@ class Server:
     def __register_channels (self, channels):
         """
         Register worker channels.
+
+        @param channels (list) The list of channels.
         """
 
         if type(channels) in (list, tuple):
