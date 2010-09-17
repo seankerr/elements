@@ -27,12 +27,9 @@ class ExampleAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
-        """
         client.compose_headers()
         client.write("GET served")
         client.flush()
-        """
-        client.serve_static_file("/archive/jpos/ibm-java2-i386-jre-5.0-9.0.i386.tar.gz", "penis.txt")
 
     # ------------------------------------------------------------------------------------------------------------------
 
