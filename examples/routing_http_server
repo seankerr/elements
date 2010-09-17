@@ -14,6 +14,7 @@ sys.path.append(os.path.abspath("../lib"))
 
 from elements.async.impl.http import HttpAction
 from elements.async.impl.http import RoutingHttpServer
+from elements.async.impl.http import StaticHttpAction
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -26,9 +27,12 @@ class ExampleAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
+        """
         client.compose_headers()
         client.write("GET served")
         client.flush()
+        """
+        client.serve_static_file("/archive/jpos/ibm-java2-i386-jre-5.0-9.0.i386.tar.gz", "penis.txt")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -107,4 +111,5 @@ class ExampleValidatingAction (HttpAction):
 RoutingHttpServer(hosts=[("0.0.0.0", 8080)],
                   routes={ "/":         (ExampleAction, ),
                            "/sentence": (ExampleArgsAction, {"sentence": "Hello, world! This is ExampleArgsAction!"}),
+                           "/static":   ("(file:.*)", StaticHttpAction, {"fs_root": os.getcwd() + "/static"}),
                            "/validate": ("(number:\d+)/(word:\w+)", ExampleValidatingAction) }).start()
