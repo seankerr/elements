@@ -883,9 +883,8 @@ class HttpClient (Client):
             else:
                 self.content_type = "text/plain"
 
+            # compose headers and write the first portion of the file
             self.compose_headers()
-
-            # write first portion of file
             self.write(file.read(FILE_READ_SIZE))
             self.flush()
 
@@ -1103,9 +1102,6 @@ class RoutingHttpServer (HttpServer):
 
                         pattern = re.compile(pattern)
 
-                        self._routes[script_name] = (pattern, action(self, "Method Not Supported", HTTP_405,
-                                                                           **action_kwargs))
-
                     except Exception, e:
                         raise ServerException("Regex pattern error for route '%s': %s" % (script_name, str(e)))
 
@@ -1142,3 +1138,35 @@ class RoutingHttpServer (HttpServer):
         """
 
         self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class StaticHttpAction (HttpAction):
+
+    def __init__ (self, fs_root, param="file", **kwargs):
+        """
+        Create a new StaticHttpAction instance.
+
+        @param fs_root (str) The absolute filesystem path from which all static files will be served.
+        @param param   (str) The parameter name to pull that contains the filename to serve.
+        """
+
+        HttpAction.__init__(self, **kwargs)
+
+        self._fs_root = fs_root
+        self._param   = param
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get (self, client):
+        """
+        Handle a GET request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        file = os.path.realpath("/".join((self._fs_root, client.params.get(self._param, "").strip(" /\\"))))
+
+        if not file.startswith(self._fs_root) or file == self._fs_root or not client.serve_static_file(file):
+            # wrong location or file doesn't exist/can't be opened for reading
+            client._server._error_actions[HTTP_404][1].get(client)
