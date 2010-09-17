@@ -217,7 +217,7 @@ class Server:
 
     def handle_channels (self, pid, sockets):
         """
-        This callback is executed when channels need to be prepared for a worker process.
+        This callback will be executed when channels need to be prepared for a worker process.
 
         @param pid     (int)  The process id.
         @param sockets (list) A list of channel sockets for process communication.
@@ -253,7 +253,7 @@ class Server:
 
     def handle_exception (self, exception, client=None):
         """
-        This callback is executed when an uncaught exception is found while processing a client.
+        This callback will be executed when an uncaught exception is found while processing a client.
 
         @param exception (Exception) The exception.
         @param client    (Client)    The Client instance that was active during the exception.
@@ -279,8 +279,7 @@ class Server:
 
     def handle_init (self):
         """
-        This callback is executed during the start of the process immediately before the processing loop starts. This
-        will be executed only once per process.
+        This callback will be executed during the start of the process immediately before the processing loop starts.
         """
 
         pass
@@ -289,7 +288,7 @@ class Server:
 
     def handle_loop (self):
         """
-        This callback is executed at the top of each event manager loop.
+        This callback will be executed at the top of each event manager loop.
 
         @return (object) A list of modified clients (or an empty list), if processing should continue, otherwise False.
         """
@@ -300,7 +299,7 @@ class Server:
 
     def handle_signal (self, code, frame):
         """
-        This callback is executed when a signal has been received.
+        This callback will be executed when a signal has been received.
 
         @param code  (int)    The signal code.
         @param frame (object) The stack frame.
@@ -364,7 +363,7 @@ class Server:
 
     def handle_worker_exited (self, pid, status):
         """
-        This callback is executed when a worker process has exited.
+        This callback will be executed when a worker process has exited.
 
         @param pid    (int) The process id.
         @param status (int) The exit status.
