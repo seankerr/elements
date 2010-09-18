@@ -295,9 +295,43 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def handle_content_negotiation (self):
+        """
+        This callback will be executed after the headers have been parsed and content negotiation needs to start.
+        """
+
+        # check content type
+        content_type = self.in_headers.get("HTTP_CONTENT_TYPE", "text/plain").lower()
+
+        if content_type == "text/plain":
+            # nothing else to do, just dispatch the request
+            self.handle_dispatch()
+
+        elif content_type == "application/x-www-form-urlencoded":
+            # request contains encoded content
+            try:
+                content_length = int(self.in_headers["HTTP_CONTENT_LENGTH"])
+
+            except:
+                # length required
+                self._server._error_actions[HTTP_411][1].get(self)
+
+                return
+
+            # parse content
+            self.read_length(content_length, self.handle_urlencoded_content)
+
+        elif content_type.startswith("multipart/form-data"):
+            # request contains multipart content
+            self._multipart_boundary = "--" + content_type[30:]
+
+            self.read_length(len(self._multipart_boundary), self.handle_multipart_boundary)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def handle_dispatch (self):
         """
-        This callback is executed when the request has been parsed and needs dispatched to a handler.
+        This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
         raise ClientException("HttpClient.handle_dispatch() must be overridden")
@@ -306,9 +340,9 @@ class HttpClient (Client):
 
     def handle_headers (self, data):
         """
-        This callback is executed when the client headers need to be parsed.
+        This callback will be executed when headers are ready to be parsed.
 
-        @param data The data that has tentatively been found as the HTTP headers.
+        @param data (str) The data that has tentatively been found as the HTTP headers.
         """
 
         try:
@@ -335,32 +369,8 @@ class HttpClient (Client):
             elif in_headers.get("HTTP_CONNECTION", "").lower() == "keep-alive":
                 self._persistence_type = PERSISTENCE_KEEP_ALIVE
 
-            # check content type
-            content_type = in_headers.get("HTTP_CONTENT_TYPE", "text/plain").lower()
-
-            if content_type == "text/plain":
-                # nothing else to do, just dispatch the request
-                self.handle_dispatch()
-
-            elif content_type == "application/x-www-form-urlencoded":
-                # request contains encoded content
-                try:
-                    content_length = int(in_headers["HTTP_CONTENT_LENGTH"])
-
-                except:
-                    # length required
-                    self._server._error_actions[HTTP_411][1].get(self)
-
-                    return
-
-                # parse content
-                self.read_length(content_length, self.handle_urlencoded_content)
-
-            elif content_type.startswith("multipart/form-data"):
-                # request contains multipart content
-                self._multipart_boundary = "--" + content_type[30:]
-
-                self.read_length(len(self._multipart_boundary), self.handle_multipart_boundary)
+            # start content negotiation
+            self.handle_content_negotiation()
 
         except:
             # bad request
@@ -384,9 +394,9 @@ class HttpClient (Client):
 
     def handle_multipart_boundary (self, data):
         """
-        This callback is executed when a multipart boundary has been located.
+        This callback will be executed when a multipart boundary has been located.
 
-        @param data The multipart boundary.
+        @param data (str) The multipart boundary.
         """
 
         self.read_length(2, self.handle_multipart_post_boundary)
@@ -395,9 +405,9 @@ class HttpClient (Client):
 
     def handle_multipart_headers (self, data):
         """
-        This callback is executed when multipart headers need to be parsed.
+        This callback will be executed when multipart headers need to be parsed.
 
-        @param data The data that has tentatively been found as multipart headers.
+        @param data (str) The data that has tentatively been found as multipart headers.
         """
 
         try:
@@ -489,9 +499,9 @@ class HttpClient (Client):
 
     def handle_multipart_post_boundary (self, data):
         """
-        This callback is executed when a multipart post boundary has been located.
+        This callback will be executed when a multipart post boundary has been located.
 
-        @param data The multipart post boundary.
+        @param data (str) The multipart post boundary.
         """
 
         if data == "\r\n":
@@ -513,9 +523,9 @@ class HttpClient (Client):
 
     def handle_request (self, data):
         """
-        This callback is executed when the initial request line need to be parsed.
+        This callback will be executed when the initial request line needs parsed.
 
-        @param data The data that has tentatively been found as the request line.
+        @param data (str) The data that has tentatively been found as the request line.
         """
 
         self.__files            = []
@@ -626,7 +636,7 @@ class HttpClient (Client):
 
     def handle_upload_finished (self, file):
         """
-        This callback is executed when an upload file has finished.
+        This callback will be executed when an upload file has finished.
 
         @param file (dict) The dict of upload details.
 
@@ -639,9 +649,9 @@ class HttpClient (Client):
 
     def handle_urlencoded_content (self, data):
         """
-        This callback is executed when urlencoded content is ready to be parsed.
+        This callback will be executed when urlencoded content is ready to be parsed.
 
-        @param data The content.
+        @param data (str) The content.
         """
 
         params = self.params
@@ -894,6 +904,175 @@ class HttpClient (Client):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class HttpRequest (Client):
+
+    def __init__ (self, host, port=80):
+        """
+        Create a new HttpRequest instance.
+
+        @param host (str) The hostname.
+        @param port (int) The port.
+        """
+
+        self._host   = host
+        self._port   = port
+        self._socket = None
+
+        self.reset()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def add_file (self, path):
+        """
+        Add a file.
+
+        @param path (str) The absolute filesystem path to the file.
+        """
+
+        try:
+            file = open(path, "rb")
+
+            self._files.append(file)
+
+        except Exception, e:
+            raise ClientException("Cannot add file: %s" % str(e))
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_download (self, name, size):
+        """
+        This callback will be executed when downloadable content is available.
+
+        @param name (str) The file name.
+        @param size (int) The file size.
+
+        @return (tuple) Where the first index is a boolean indicating whether or not to store the downloadable content.
+                        If False, no more indices are required. If True, an absolute filesystem path including the
+                        filename must be supplied.
+        """
+
+        return (False, )
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_finished (self, response_code, headers, content=None, download=None):
+        """
+        This callback will be executed at the end of a successful request.
+
+        @param response_code (str)  The response code.
+        @param headers       (dict) The headers.
+        @param content       (str)  The content.
+        @param download      (dict) The downloaded file details.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_headers (self, data):
+        """
+        This callback will be executed when headers are ready to be parsed.
+
+        @param data (str) The response headers.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_response_code (self, data):
+        """
+        Handle the initial response code.
+
+        @param data (str) The status.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_write_finished (self):
+        """
+        This callback will be executed when the entire write buffer has been written.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def open (self):
+        """
+        Open the request.
+        """
+
+        if self._method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
+            raise ClientException("Invalid request method")
+
+        if not self._url:
+            raise ClientException("No URL specified")
+
+        if not self._url.startswith("/"):
+            raise ClientException("Invalid URL")
+
+        content =  "%s %s HTTP/%s" % (self._method, self._url, self._protocol_version)
+        content += "\r\n".join(["%s: %s" % header for header in self._headers.items()])
+        content += "\r\n"
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def reset (self):
+        """
+        Reset the request details.
+        """
+
+        self._cookies                 = {}
+        self._files                   = []
+        self._headers                 = { "Host": self._host }
+        self._is_allowing_persistence = False
+        self._is_following_redirects  = False
+        self._is_secure               = False
+        self._method                  = "GET"
+        self._parameters              = {}
+        self._protocol_version        = "1.1"
+        self._url                     = None
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_cookie (self, name, value):
+        """
+        Add a cookie.
+
+        @param name  (str) The cookie name.
+        @param value (str) The cookie value.
+        """
+
+        self._cookies[name] = value
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_header (self, name, value):
+        """
+        Set a header.
+
+        @param name  (str) The header name.
+        @param value (str) The header value.
+        """
+
+        self._headers[name] = value
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_headers (self, headers):
+        """
+        Merge multiple headers.
+
+        @param headers (dict) The dict of headers to merge.
+        """
+
+        self._headers.update(headers)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class HttpServer (Server):
 
     def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, max_upload_size=None,
@@ -970,7 +1149,7 @@ class HttpServer (Server):
 
     def handle_exception (self, exception, client=None):
         """
-        This callback is executed when an uncaught exception is found while processing a client.
+        This callback will be executed when an uncaught exception is found while processing a client.
 
         @param exception (Exception)  The exception.
         @param client    (HttpClient) The HttpClient instance that was active during the exception.
@@ -998,7 +1177,7 @@ class RoutingHttpClient (HttpClient):
 
     def handle_dispatch (self):
         """
-        This callback is executed when the request has been parsed and needs dispatched to a handler.
+        This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
         route           = self.in_headers["SCRIPT_NAME"].split(":", 1)
