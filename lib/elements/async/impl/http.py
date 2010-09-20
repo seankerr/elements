@@ -1332,10 +1332,21 @@ class HttpRequest (Client):
         """
         Merge multiple headers.
 
-        @param headers (dict) The dict of headers to merge.
+        @param headers (dict) The headers to merge.
         """
 
         self.out_headers.update(headers)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_parameters (self, parameters):
+        """
+        Merge multiple parameters.
+
+        @param parameters (dict) The parameters to merge.
+        """
+
+        self.parameters.update(parameters)
 
     # ------------------------------------------------------------------------------------------------------------------
 
