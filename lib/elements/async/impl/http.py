@@ -1069,16 +1069,12 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_finished (self, response_code, headers, cookies, content=None, download=None):
+    def handle_finished (self):
         """
         This callback will be executed at the end of a successful request.
-
-        @param response_code (str)  The response code.
-        @param headers       (dict) The headers.
-        @param cookies       (dict) The cookies.
-        @param content       (str)  The content.
-        @param download      (dict) The downloaded file details.
         """
+
+        pass
 
     # ------------------------------------------------------------------------------------------------------------------
 
