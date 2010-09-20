@@ -5,6 +5,11 @@
 #
 # Author: Sean Kerr <sean@code-box.org>
 
+try:
+    import cStringIO as StringIO
+except:
+    import StringIO
+
 import datetime
 import mimetypes
 import os
@@ -907,19 +912,37 @@ class HttpClient (Client):
 
 class HttpRequest (Client):
 
-    def __init__ (self, host, port=80):
+    def __init__ (self, server, host, port=80):
         """
         Create a new HttpRequest instance.
 
-        @param host (str) The hostname.
-        @param port (int) The port.
+        @param server (Server) The Server instance.
+        @param host   (str)    The hostname.
+        @param port   (int)    The port.
         """
 
         self._host   = host
         self._port   = port
+        self._server = server
         self._socket = None
+        self.files   = None
 
         self.reset()
+
+        try:
+            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            self._socket.connect((self._host, self._port))
+            self._socket.setblocking(0)
+
+            # initialize parent class
+            Client.__init__(self, self._socket, (socket.gethostbyname(host), port), server, ('0.0.0.0', 80))
+
+        except Exception, e:
+            raise ClientException("Cannot connect to %s: %s" % (self._host, str(e)))
+
+        # register as a client
+        server.register_client(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -931,12 +954,89 @@ class HttpRequest (Client):
         """
 
         try:
-            file = open(path, "rb")
+            file     = open(path, "rb")
+            filename = os.path.basename(path)
 
-            self._files.append(file)
+            # determine mimetype
+            mimetype = mimetypes.guess_type(filename)
+
+            if mimetype[0]:
+                mimetype = mimetype[0]
+
+            elif mimetype[1]:
+                mimetype = "+".join(("text/", mimetype[1]))
+
+            else:
+                mimetype = "text/plain"
+
+            self.files.append({ "file": file, "filename": filename, "mimetype": mimetype })
 
         except Exception, e:
-            raise ClientException("Cannot add file: %s" % str(e))
+            raise ClientException("Cannot add file '%s': %s" % (path, str(e)))
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_content_chunk (self, data):
+        """
+        This callback will be executed for each chunk in a chunked transfer.
+
+        @param data (str) The chunk of data.
+        """
+
+        self.content.write(data)
+
+        self.read_delimiter("\r\n", self.handle_content_chunk_length)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_content_chunk_length (self, data):
+        """
+        This callback will be executed prior to each chunk in a chunked transfer. This determines the chunk length.
+
+        @param data (str) The chunk length.
+        """
+
+        length = int(data.strip().split(";")[0], 16)
+
+        if length > 0:
+            # add 2 bytes for the CRLF after the chunk
+            self.read_length(length + 2, self.handle_content_chunk)
+
+            return
+
+        # parse footers
+        self._is_handling_footers = True
+
+        self.read_delimiter("\r\n", self.handle_headers)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_content_negotiation (self):
+        """
+        This callback will be executed after the headers have been parsed and content negotiation needs to start.
+        """
+
+        content_type = self.in_headers.get("CONTENT_TYPE", "text/html").split("; ")
+
+        if len(content_type) > 1:
+            self.content_encoding = content_type[1]
+
+        self.content_type = content_type[0]
+
+        if self.in_headers.get("TRANSFER_ENCODING", None) == "chunked":
+            self.read_delimiter("\r\n", self.handle_content_chunk_length)
+
+        else:
+            try:
+                content_length = int(self.in_headers.get("CONTENT_LENGTH", 0))
+
+            except:
+                raise ClientException("Invalid response content length")
+
+            if content_length == 0:
+                raise ClientException("Response contains no content length")
+
+            self.read_length(content_length, self.handle_end_content)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -956,17 +1056,29 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_finished (self, response_code, headers, content=None, download=None):
+    def handle_end_content (self, data):
+        """
+        This callback will be executed when a non-chunked response has been read in its entirety.
+
+        @param data (str) The data.
+        """
+
+        self.content = data
+
+        self.handle_finished()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_finished (self, response_code, headers, cookies, content=None, download=None):
         """
         This callback will be executed at the end of a successful request.
 
         @param response_code (str)  The response code.
         @param headers       (dict) The headers.
+        @param cookies       (dict) The cookies.
         @param content       (str)  The content.
         @param download      (dict) The downloaded file details.
         """
-
-        pass
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -977,7 +1089,70 @@ class HttpRequest (Client):
         @param data (str) The response headers.
         """
 
-        pass
+        data = data.rstrip()
+
+        try:
+            if len(data) > 0:
+                # parse headers
+                for header in data.split("\r\n"):
+                    name, value = header.split(": ")
+
+                    name = name.upper().replace("-", "_")
+
+                    if name != "SET_COOKIE":
+                        # header assignment
+                        self.in_headers[name] = value
+
+                        continue
+
+                    # cookie assignment
+                    cookie = { "http_only": False,
+                               "secure":    False }
+
+                    for i, item in enumerate(value.split(";")):
+                        item = item.split("=", 1)
+
+                        if i == 0:
+                            # add cookie
+                            cookie["value"] = item[1].strip()
+
+                            self.in_cookies[item[0].strip()] = cookie
+
+                            continue
+
+                        if len(item) == 1:
+                            if item == "HttpOnly":
+                                cookie["http_only"] = True
+
+                            if item == "secure":
+                                cookie["secure"] = True
+
+                            continue
+
+                        key, value = item
+                        key        = urllib.unquote(key.strip())
+                        value      = urllib.unquote(value.strip())
+
+                        cookie[key] = value
+
+                # check persistence
+                if self.in_headers.get("CONNECTION", "").lower() != "closed":
+                    self.is_allowing_persistence = True
+
+        except Exception, e:
+            # invalid response
+            raise ClientException("Invalid response headers: %s" % str(e))
+
+        if self._is_handling_footers:
+            # end of response
+            self.content = self.content.getvalue()
+
+            self.handle_finished()
+
+            return
+
+        # start content negotiation
+        self.handle_content_negotiation()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -988,7 +1163,41 @@ class HttpRequest (Client):
         @param data (str) The status.
         """
 
-        pass
+        try:
+            protocol, response_code, response_message = data.strip().split(" ", 2)
+
+            protocol, protocol_version = protocol.split("/", 1)
+
+        except:
+            # malformed response line
+            raise ClientException("Malformed response line: %s" % data)
+
+        if protocol.upper() != "HTTP":
+            # unsupported response protocol
+            raise ClientException("Unsupported response protocol: %s" % protocol)
+
+        self._in_protocol_version = protocol_version
+        self.response_code        = response_code
+
+        self.read_delimiter("\r\n\r\n", self.handle_headers)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_shutdown (self):
+        """
+        This callback will be executed when this Client instance is shutting down.
+        """
+
+        Client.handle_shutdown(self)
+
+        if self.files:
+            # close any open files
+            for file in self.files:
+                try:
+                    file["file"].close()
+
+                except:
+                    pass
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1001,23 +1210,64 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def open (self):
+    def open (self, url, method="GET"):
         """
         Open the request.
+
+        @param url    (str) The remote URL.
+        @param method (str) The request method. If files or parameters are present, this will automatically be set to
+                            POST.
         """
 
-        if self._method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
-            raise ClientException("Invalid request method")
+        self.method        = method
+        self.url           = url
+        encoded_parameters = ""
+        multipart          = False
 
-        if not self._url:
-            raise ClientException("No URL specified")
+        if self.parameters:
+            encoded_parameters = "&".join(["%s=%s" % (urllib.quote(name), urllib.quote(value)) \
+                                          for name, value in self.parameters.items()])
+            self.method = "POST"
 
-        if not self._url.startswith("/"):
-            raise ClientException("Invalid URL")
+            self.set_header("Content-Length", str(len(encoded_parameters)))
+            self.set_header("Content-Type",   "application/x-www-form-urlencoded")
 
-        content =  "%s %s HTTP/%s" % (self._method, self._url, self._protocol_version)
-        content += "\r\n".join(["%s: %s" % header for header in self._headers.items()])
-        content += "\r\n"
+        if self.files:
+            self.method = "POST"
+            multipart   = True
+
+            self.set_header("Content-Type", "multipart/form-data")
+
+        if self.method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
+            # unsupported method
+            raise ClientException("Unsupported request method: %s" % self.method)
+
+        if not self.url.startswith("/"):
+            # the url must start with a forward slash
+            self.url = "/" + self.url
+
+        if self.out_protocol_version not in ("1.1", "1.2"):
+            # must be a recent protocol so we get chunked responses or content-length's
+            raise ClientException("HTTP protocol must be 1.1 or newer")
+
+        # write request line, headers and post body (if it exists)
+        self.write("%s %s HTTP/%s" % (self.method, self.url, self.out_protocol_version))
+        self.write("\r\n")
+        self.write("\r\n".join(["%s: %s" % header for header in self.out_headers.items()]))
+        self.write("\r\n")
+
+        if self.out_cookies:
+            self.write("Cookie: " + "; ".join(["%s=%s" % (urllib.quote(name), urllib.quote(value)) \
+                                              for name, value in self.out_cookies.items()]))
+            self.write("\r\n")
+
+        self.write("\r\n")
+        self.write(encoded_parameters)
+        self.flush()
+        self.read_delimiter("\r\n", self.handle_response_code)
+
+        # update our events
+        self._server.modify_client(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1026,16 +1276,31 @@ class HttpRequest (Client):
         Reset the request details.
         """
 
-        self._cookies                 = {}
-        self._files                   = []
-        self._headers                 = { "Host": self._host }
-        self._is_allowing_persistence = False
-        self._is_following_redirects  = False
-        self._is_secure               = False
-        self._method                  = "GET"
-        self._parameters              = {}
-        self._protocol_version        = "1.1"
-        self._url                     = None
+        if self.files:
+            # close any open files
+            for file in self.files:
+                try:
+                    file["file"].close()
+
+                except:
+                    pass
+
+        self.content                 = StringIO.StringIO()
+        self.content_encoding        = None
+        self.download                = None
+        self.files                   = []
+        self.in_cookies              = {}
+        self.in_headers              = {}
+        self.is_allowing_persistence = False
+        self.method                  = None
+        self.out_cookies             = {}
+        self.out_headers             = { "Content-Type": "text/plain",
+                                         "Host":         self._host }
+        self.parameters              = {}
+        self.out_protocol_version    = "1.1"
+        self.response_code           = None
+        self.url                     = None
+        self._is_handling_footers    = False
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1047,7 +1312,7 @@ class HttpRequest (Client):
         @param value (str) The cookie value.
         """
 
-        self._cookies[name] = value
+        self.out_cookies[name] = value
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1059,7 +1324,7 @@ class HttpRequest (Client):
         @param value (str) The header value.
         """
 
-        self._headers[name] = value
+        self.out_headers[name] = value
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1070,7 +1335,19 @@ class HttpRequest (Client):
         @param headers (dict) The dict of headers to merge.
         """
 
-        self._headers.update(headers)
+        self.out_headers.update(headers)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_parameter (self, name, value):
+        """
+        Set a parameter.
+
+        @param name  (str)    The name.
+        @param value (object) The value or list of values.
+        """
+
+        self.parameters[name] = value
 
 # ----------------------------------------------------------------------------------------------------------------------
 
