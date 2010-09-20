@@ -32,32 +32,6 @@ class ExampleHttpRequest (HttpRequest):
         print self.is_allowing_persistence
         print self.content
 
-        """
-        if self.is_allowing_persistence:
-            # send another request using the open socket (http persistence)
-            self.reset()
-
-            request.set_parameter("p",      "lolcats")
-            request.set_parameter("toggle", "1")
-            request.set_parameter("cop",    "mss")
-            request.set_parameter("ei",     "UTF-8")
-            request.set_parameter("fr",     "yfp-t-892")
-
-            request.open("/search")
-        """
-
-        # finish request
-        self.clear_events()
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_shutdown (self):
-        """
-        This callback will be executed when this HttpClient instance is shutting down.
-        """
-
-        HttpRequest.handle_shutdown(self)
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 class ExampleServer (Server):
