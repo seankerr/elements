@@ -395,6 +395,17 @@ class Server:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def modify_client (self, client):
+        """
+        Modify the events for a client.
+
+        @param client (Client) The client.
+        """
+
+        self._event_manager.modify(client._fileno, client._events)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def register_client (self, client):
         """
         Register a client.
