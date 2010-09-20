@@ -103,7 +103,7 @@ class HttpAction:
         Create a new HttpAction instance.
 
         @param server        (HttpServer) The HttpServer instance.
-        @param title         (str)        The H1 title to display when this core action handles a request.
+        @param title         (str)        The title to display when this core action handles a request.
         @param response_code (str)        The response code to use when this core action handles a request.
         """
 
@@ -283,15 +283,16 @@ class HttpClient (Client):
                 out_headers["Connection"] = "close"
 
         # build the request head
-        head = " ".join((self.in_headers["SERVER_PROTOCOL"], self.response_code))
+        self.write(" ".join((self.in_headers["SERVER_PROTOCOL"], self.response_code)))
+        self.write("\r\n")
+        self.write("\r\n".join(["%s: %s" % header for header in out_headers.items()]))
+        self.write("\r\n")
 
-        for item in out_headers.items():
-            head += "\r\n" + ": ".join(item)
+        if self.out_cookies:
+            self.write("\r\n".join(["Set-Cookie: %s" % cookie for cookie in self.out_cookies.values()]))
+            self.write("\r\n")
 
-        for cookie in self.out_cookies.values():
-            head += "\r\nSet-Cookie: " + cookie
-
-        self.write(head + "\r\n\r\n")
+        self.write("\r\n")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -840,7 +841,7 @@ class HttpClient (Client):
         @param secure    (bool)     Indicates that the cookie will only be transmitted over an HTTPS connection.
         """
 
-        cookie = name + "=" + urllib.quote(str(value)) + "; path=" + path
+        cookie = "".join((name, "=", urllib.quote(str(value)), "; path=", path))
 
         if domain:
             cookie += "; domain=" + domain
