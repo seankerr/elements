@@ -1339,17 +1339,6 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def set_parameters (self, parameters):
-        """
-        Merge multiple parameters.
-
-        @param parameters (dict) The parameters to merge.
-        """
-
-        self.parameters.update(parameters)
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def set_parameter (self, name, value):
         """
         Set a parameter.
@@ -1359,6 +1348,17 @@ class HttpRequest (Client):
         """
 
         self.parameters[name] = value
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def set_parameters (self, parameters):
+        """
+        Merge multiple parameters.
+
+        @param parameters (dict) The parameters to merge.
+        """
+
+        self.parameters.update(parameters)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
