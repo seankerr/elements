@@ -1138,7 +1138,7 @@ class HttpRequest (Client):
         This callback will be executed at the end of a successful request.
         """
 
-        pass
+        raise ClientException("HttpRequest.handle_finished() must be overridden")
 
     # ------------------------------------------------------------------------------------------------------------------
 
