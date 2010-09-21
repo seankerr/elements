@@ -418,7 +418,7 @@ class Boolean (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -471,7 +471,7 @@ class Date (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -522,7 +522,7 @@ class Datetime (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -582,7 +582,7 @@ class Domain (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -632,7 +632,7 @@ class Email (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -735,7 +735,7 @@ class Float (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -833,7 +833,7 @@ class Int (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -875,7 +875,7 @@ class IPAddress (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -907,7 +907,7 @@ class Money (Float):
         """
 
         # type validator
-        self.type_err = kwargs.get("type_err", settings.model_model_type_err)
+        self.type_err = kwargs.get("type_err", settings.model_money_type_err)
 
         if "min" in kwargs and "min_err" not in kwargs:
             self.min_err = settings.model_money_min_err
@@ -924,7 +924,7 @@ class Money (Float):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -1061,7 +1061,7 @@ class Text (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -1101,7 +1101,7 @@ class Time (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
@@ -1171,7 +1171,7 @@ class URL (Field):
         """
         Make all attempts to convert the value to the proper type.
 
-        @param value (object) The value to type test. 
+        @param value (object) The value to type test.
 
         @return (tuple) Upon success a two-part tuple where the first part is True and the second part is the field
                         value. Upon failure a three-part tuple where the first part is False, the second part is the
