@@ -125,8 +125,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -138,8 +140,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -151,8 +155,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -164,8 +170,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -177,8 +185,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -190,8 +200,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -203,8 +215,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -216,8 +230,10 @@ class HttpAction:
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (self.__response_code, elements.APP_NAME,
-                                                                   self.__title))
+        client.response_code = self.__response_code
+
+        client.compose_headers()
+        client.write("<h1>%s</h1>" % self.__title)
         client.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -237,10 +253,13 @@ class HttpClient (Client):
 
         Client.__init__(self, client_socket, client_address, server, server_address)
 
+        self._chunked_write_buffer    = StringIO.StringIO() # chunk encoding write buffer
         self._is_allowing_persistence = False               # indicates that this client allows persistence
         self._max_persistent_requests = None                # maximum persistent requests allowed
         self._multipart_file          = None                # current multipart upload file
-        self._orig_read_delimiter     = self.read_delimiter # current read delimiter method
+        self._orig_flush              = self.flush          # original flush method
+        self._orig_read_delimiter     = self.read_delimiter # original read delimiter method
+        self._orig_write              = self.write          # original write method
         self._request_count           = 0                   # count of served requests (only useful if persistence is
                                                             # enabled)
 
@@ -265,9 +284,11 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def compose_headers (self):
+    def compose_headers (self, chunked_encoding=True):
         """
         Compose the response headers.
+
+        @param chunked_encoding (bool) Indicates that chunked encoding should be used.
         """
 
         out_headers = self.out_headers
@@ -275,6 +296,9 @@ class HttpClient (Client):
         # required headers
         out_headers["Content-Type"] = self.content_type
         out_headers["Server"]       = elements.APP_NAME
+
+        if chunked_encoding and not self._static_file:
+            out_headers["Transfer-Encoding"] = "chunked"
 
         # handle persistence
         if self._max_persistent_requests and self._request_count >= self._max_persistent_requests:
@@ -298,6 +322,12 @@ class HttpClient (Client):
             self.write("\r\n")
 
         self.write("\r\n")
+        self.flush()
+
+        if chunked_encoding and not self._static_file:
+            # future flush and write operations must use a chunked encoding
+            self.flush = self.__chunked_flush
+            self.write = self.__chunked_write
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -541,11 +571,13 @@ class HttpClient (Client):
         self._static_file       = None
         self.content_type       = "text/html"
         self.files              = None
+        self.flush              = self._orig_flush
         self.in_cookies         = {}
         self.out_cookies        = {}
         self.out_headers        = {}
         self.read_delimiter     = self._orig_read_delimiter
         self.response_code      = HTTP_200
+        self.write              = self._orig_write
 
         # parse method, uri and protocol
         try:
@@ -908,6 +940,38 @@ class HttpClient (Client):
             # file doesn't exist or permission denied
             return False
 
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __chunked_flush (self, last=True):
+        """
+        Notify the event manager that there is write data available.
+
+        @param last (bool) Indicates that this is the last chunk of data being flushed.
+        """
+
+        # flush using chunked transfer encoding
+        buffer = self._chunked_write_buffer
+        data   = buffer.getvalue()
+
+        buffer.truncate(0)
+
+        Client.write(self, "".join((hex(len(data))[2:], "\r\n", data, "\r\n")))
+
+        if last:
+            # this is the last chunk so write the ending chunk size followed by an empty set of footers
+            Client.write(self, "0\r\n\r\n\r\n")
+
+        Client.flush(self)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __chunked_write (self, data):
+        """
+        Append data onto the write buffer.
+        """
+
+        self._chunked_write_buffer.write(data)
+
 # ----------------------------------------------------------------------------------------------------------------------
 
 class HttpRequest (Client):
@@ -1164,7 +1228,7 @@ class HttpRequest (Client):
 
             protocol, protocol_version = protocol.split("/", 1)
 
-        except:
+        except Exception, e:
             # malformed response line
             raise ClientException("Malformed response line: %s" % data)
 
@@ -1218,19 +1282,26 @@ class HttpRequest (Client):
         self.method        = method
         self.url           = url
         encoded_parameters = ""
-        multipart          = False
 
-        if self.parameters:
-            encoded_parameters = "&".join(["%s=%s" % (urllib.quote(name), urllib.quote(value)) \
-                                          for name, value in self.parameters.items()])
-            self.method = "POST"
+        # determine whether or not we're sending encoded parameters or a mixture of parameters and files
+        if self.parameters and not self.files:
+            parameters = []
+
+            for name, value in self.parameters.items():
+                if type(value) not in (list, tuple):
+                    value = [value]
+
+                for value in value:
+                    parameters.append("%s=%s" % (urllib.quote(str(name)), urllib.quote(str(value))))
+
+            encoded_parameters = "&".join(parameters)
+            self.method        = "POST"
 
             self.set_header("Content-Length", str(len(encoded_parameters)))
             self.set_header("Content-Type",   "application/x-www-form-urlencoded")
 
-        if self.files:
+        elif self.files:
             self.method = "POST"
-            multipart   = True
 
             self.set_header("Content-Type", "multipart/form-data")
 
