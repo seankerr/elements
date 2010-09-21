@@ -859,6 +859,7 @@ class HttpClient (Client):
                 self._multipart_file_size += len(chunk)
 
                 if not self._is_multipart_maxed:
+                    # write another chunk of the file to disk to avoid memory consumption
                     multipart_file.write(chunk)
                     multipart_file.flush()
 
