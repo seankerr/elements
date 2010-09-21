@@ -255,6 +255,7 @@ class HttpClient (Client):
 
         self._chunked_write_buffer    = StringIO.StringIO() # chunk encoding write buffer
         self._is_allowing_persistence = False               # indicates that this client allows persistence
+        self._is_headers_written      = False               # indicates that the headers have been written
         self._max_persistent_requests = None                # maximum persistent requests allowed
         self._multipart_file          = None                # current multipart upload file
         self._orig_flush              = self.flush          # original flush method
@@ -267,6 +268,7 @@ class HttpClient (Client):
         # even in the event that a timeout occurred before a request could physically be handled
         self.__files = []
 
+        # read until we get the initial request line
         self.read_delimiter("\r\n", self.handle_request, server._max_request_length)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -290,6 +292,9 @@ class HttpClient (Client):
 
         @param chunked_encoding (bool) Indicates that chunked encoding should be used.
         """
+
+        if self._is_headers_written:
+            return
 
         out_headers = self.out_headers
 
@@ -329,6 +334,8 @@ class HttpClient (Client):
             self.flush = self.__chunked_flush
             self.write = self.__chunked_write
 
+        self._is_headers_written = True
+
     # ------------------------------------------------------------------------------------------------------------------
 
     def handle_content_negotiation (self):
@@ -354,13 +361,14 @@ class HttpClient (Client):
 
                 return
 
-            # parse content
+            # read until we get all of the encoded data
             self.read_length(content_length, self.handle_urlencoded_content)
 
         elif content_type.startswith("multipart/form-data"):
             # request contains multipart content
             self._multipart_boundary = "--" + content_type[30:]
 
+            # read until we have consumed all of the boundary details
             self.read_length(len(self._multipart_boundary), self.handle_multipart_boundary)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -405,12 +413,12 @@ class HttpClient (Client):
             elif in_headers.get("HTTP_CONNECTION", "").lower() == "keep-alive":
                 self._persistence_type = PERSISTENCE_KEEP_ALIVE
 
-            # start content negotiation
-            self.handle_content_negotiation()
-
         except:
             # bad request
             self._server._error_actions[HTTP_400][1].get(self)
+
+        # start content negotiation
+        self.handle_content_negotiation()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -435,6 +443,7 @@ class HttpClient (Client):
         @param data (str) The multipart boundary.
         """
 
+        # read until we have consumed the 2 bytes (CRLF) after the boundary
         self.read_length(2, self.handle_multipart_post_boundary)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -463,7 +472,7 @@ class HttpClient (Client):
             self._multipart_name = name
 
             if pos == -1:
-                # regular field
+                # read until we have all of the field data
                 self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary, 1000)
 
                 return
@@ -525,11 +534,12 @@ class HttpClient (Client):
             self._multipart_file      = open(temp_name, "wb+")
             self._multipart_file_size = 0
 
-            self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
-
         except:
             # bad request
             self._server._error_actions[HTTP_400][1].get(self)
+
+        # read until we hit the boundary
+        self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -541,7 +551,7 @@ class HttpClient (Client):
         """
 
         if data == "\r\n":
-            # there is more multipart data to parse
+            # read until we hit the end of the multipart headers
             self.read_delimiter("\r\n\r\n", self.handle_multipart_headers)
 
             return
@@ -564,20 +574,21 @@ class HttpClient (Client):
         @param data (str) The data that has tentatively been found as the request line.
         """
 
-        self.__files            = []
-        self._multipart_file    = None
-        self._persistence_type  = None
-        self._request_count    += 1
-        self._static_file       = None
-        self.content_type       = "text/html"
-        self.files              = None
-        self.flush              = self._orig_flush
-        self.in_cookies         = {}
-        self.out_cookies        = {}
-        self.out_headers        = {}
-        self.read_delimiter     = self._orig_read_delimiter
-        self.response_code      = HTTP_200
-        self.write              = self._orig_write
+        self.__files              = []
+        self._is_headers_flushed  = False
+        self._multipart_file      = None
+        self._persistence_type    = None
+        self._request_count      += 1
+        self._static_file         = None
+        self.content_type         = "text/html"
+        self.files                = None
+        self.flush                = self._orig_flush
+        self.in_cookies           = {}
+        self.out_cookies          = {}
+        self.out_headers          = {}
+        self.read_delimiter       = self._orig_read_delimiter
+        self.response_code        = HTTP_200
+        self.write                = self._orig_write
 
         # parse method, uri and protocol
         try:
@@ -642,7 +653,7 @@ class HttpClient (Client):
 
         self.in_headers = in_headers
 
-        # parse headers
+        # read until we hit the end of the headers
         self.read_delimiter("\r\n\r\n", self.handle_headers, self._server._max_headers_length)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -749,6 +760,8 @@ class HttpClient (Client):
             if self._is_allowing_persistence and self._persistence_type:
                 # allowing another request
                 self.clear_write_buffer()
+
+                # read until we hit the end of the headers
                 self.read_delimiter("\r\n", self.handle_request, self._server._max_request_length)
 
                 return
@@ -793,6 +806,7 @@ class HttpClient (Client):
                 buffer.truncate(0)
                 buffer.write(data[pos + len(delimiter):])
 
+                # read until we consume 2 bytes (CRLF)
                 self.read_length(2, callback)
 
                 return
@@ -832,6 +846,7 @@ class HttpClient (Client):
 
                 self.handle_upload_finished(file)
 
+                # read until we consume 2 bytes (CRLF)
                 self.read_length(2, callback)
 
                 return
@@ -1047,8 +1062,10 @@ class HttpRequest (Client):
         @param data (str) The chunk of data.
         """
 
-        self.content.write(data)
+        # write all content except the last 2 bytes (the CRLF at the end of the chunk)
+        self.content.write(data[:-2])
 
+        # read until we get the chunk length
         self.read_delimiter("\r\n", self.handle_content_chunk_length)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1063,14 +1080,14 @@ class HttpRequest (Client):
         length = int(data.strip().split(";")[0], 16)
 
         if length > 0:
-            # add 2 bytes for the CRLF after the chunk
+            # read until we get the entire chunk (add 2 bytes for CRLF)
             self.read_length(length + 2, self.handle_content_chunk)
 
             return
 
-        # parse footers
         self._is_handling_footers = True
 
+        # read until we reach the end of the footers
         self.read_delimiter("\r\n", self.handle_headers)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1088,6 +1105,7 @@ class HttpRequest (Client):
         self.content_type = content_type[0]
 
         if self.in_headers.get("TRANSFER_ENCODING", None) == "chunked":
+            # read until we get the chunk length
             self.read_delimiter("\r\n", self.handle_content_chunk_length)
 
         else:
@@ -1100,6 +1118,7 @@ class HttpRequest (Client):
             if content_length == 0:
                 raise ClientException("Response contains no content length")
 
+            # read until we get all of the content
             self.read_length(content_length, self.handle_end_content)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1239,6 +1258,7 @@ class HttpRequest (Client):
         self._in_protocol_version = protocol_version
         self.response_code        = response_code
 
+        # read until we reach the end of the headers
         self.read_delimiter("\r\n\r\n", self.handle_headers)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1331,6 +1351,8 @@ class HttpRequest (Client):
         self.write("\r\n")
         self.write(encoded_parameters)
         self.flush()
+
+        # read until we reach the end of the initial response line
         self.read_delimiter("\r\n", self.handle_response_code)
 
         # update our events
@@ -1516,16 +1538,12 @@ class HttpServer (Server):
         if not client:
             return
 
-        client.clear_write_buffer()
+        if not client._is_headers_written:
+            client.response_code = HTTP_500
 
-        if isinstance(exception, HttpException):
-            client.write("HTTP %s\r\nServer: %s\r\n\r\n<h1>%s</h1>" % (exception[1], elements.APP_NAME, exception[0]))
-
-        else:
-            client.write("HTTP 500 Internal Server Error\r\nServer: %s\r\n\r\n<h1>Internal Server Error</h1>" %
-                         elements.APP_NAME)
-
-        client.flush()
+            client.compose_headers()
+            client.write("<h1>Internal Server Error</h1>")
+            client.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
