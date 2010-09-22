@@ -1334,9 +1334,9 @@ class HttpRequest (Client):
             # the url must start with a forward slash
             self.url = "/" + self.url
 
-        if self.out_protocol_version not in ("1.1", "1.2"):
+        if self.out_protocol_version not in ("1.0", "1.1", "1.2"):
             # must be a recent protocol so we get chunked responses or content-length's
-            raise ClientException("HTTP protocol must be 1.1 or newer")
+            raise ClientException("HTTP protocol must be 1.0 or newer")
 
         # write request line, headers and post body (if it exists)
         self.write("%s %s HTTP/%s" % (self.method, self.url, self.out_protocol_version))
