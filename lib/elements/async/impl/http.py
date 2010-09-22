@@ -1339,6 +1339,8 @@ class HttpRequest (Client):
             raise ClientException("HTTP protocol must be 1.0 or newer")
 
         # write request line, headers and post body (if it exists)
+        self.out_headers["Host"] = self._host
+
         self.write("%s %s HTTP/%s" % (self.method, self.url, self.out_protocol_version))
         self.write("\r\n")
         self.write("\r\n".join(["%s: %s" % header for header in self.out_headers.items()]))
@@ -1384,8 +1386,7 @@ class HttpRequest (Client):
         self.is_allowing_persistence = False
         self.method                  = None
         self.out_cookies             = {}
-        self.out_headers             = { "Content-Type": "text/plain",
-                                         "Host":         self._host }
+        self.out_headers             = {}
         self.parameters              = {}
         self.out_protocol_version    = "1.1"
         self.response_code           = None
