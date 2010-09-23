@@ -1003,11 +1003,12 @@ class HttpRequest (Client):
         @param port   (int)    The port.
         """
 
-        self._host   = host
-        self._port   = port
-        self._server = server
-        self._socket = None
-        self.files   = None
+        self._basic_content_types = ["text/plain", "text/html"]
+        self._host                = host
+        self._port                = port
+        self._server              = server
+        self._socket              = None
+        self.files                = None
 
         self.reset()
 
@@ -1407,7 +1408,6 @@ class HttpRequest (Client):
         self.out_protocol_version    = "1.1"
         self.response_code           = None
         self.url                     = None
-        self._basic_content_types    = ["text/plain", "text/html"]
         self._is_handling_footers    = False
 
     # ------------------------------------------------------------------------------------------------------------------
