@@ -1028,6 +1028,19 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def add_basic_content_type (self, content_type):
+        """
+        Add a content-type that will be stored-in memory as a normal response and handled with handle_finished().
+        Any returned content-types that are not listed as basic are written to file and handled with handle_download().
+
+        @param content_type (str) The content type.
+        """
+
+        if content_type not in self._basic_content_types:
+            self._basic_content_types.append(content_type)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def add_file (self, path):
         """
         Add a file.
@@ -1381,11 +1394,12 @@ class HttpRequest (Client):
 
         self.content                 = StringIO.StringIO()
         self.content_encoding        = None
-        self.download                = None
+        self.content_type            = "text/plain"
         self.files                   = []
         self.in_cookies              = {}
         self.in_headers              = {}
         self.is_allowing_persistence = False
+        self.is_download             = False
         self.method                  = None
         self.out_cookies             = {}
         self.out_headers             = {}
@@ -1393,6 +1407,7 @@ class HttpRequest (Client):
         self.out_protocol_version    = "1.1"
         self.response_code           = None
         self.url                     = None
+        self._basic_content_types    = ["text/plain", "text/html"]
         self._is_handling_footers    = False
 
     # ------------------------------------------------------------------------------------------------------------------
