@@ -296,13 +296,15 @@ class HttpClient (Client):
         if self._is_headers_written:
             return
 
-        out_headers = self.out_headers
+        chunked_encoding = chunked_encoding and self.in_headers["SERVER_PROTOCOL"] != "HTTP/1.0" and \
+                           not self._static_file
+        out_headers      = self.out_headers
 
         # required headers
         out_headers["Content-Type"] = self.content_type
         out_headers["Server"]       = elements.APP_NAME
 
-        if chunked_encoding and not self._static_file:
+        if chunked_encoding:
             out_headers["Transfer-Encoding"] = "chunked"
 
         # handle persistence
@@ -329,7 +331,7 @@ class HttpClient (Client):
         self.write("\r\n")
         self.flush()
 
-        if chunked_encoding and not self._static_file:
+        if chunked_encoding:
             # future flush and write operations must use a chunked encoding
             self.flush = self.__chunked_flush
             self.write = self.__chunked_write
