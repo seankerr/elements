@@ -71,7 +71,6 @@ class Server:
         self._is_long_running          = long_running     # indicates that clients are long-running
         self._is_parent                = True             # indicates that this process is the parent
         self._is_shutting_down         = False            # indicates that this server is shutting down
-        self._is_serving_client        = False            # indicates that a client is being served
         self._loop_interval            = loop_interval    # the interval in seconds between calling handle_loop()
         self._print_settings           = print_settings   # indicates that the settings should be printed to the console
         self._timeout                  = timeout          # the timeout in seconds for a client to be removed
@@ -418,8 +417,11 @@ class Server:
         if not client._is_blocking:
             self._event_manager.register(client._fileno, client._events)
 
-        if not client._is_channel and not client._is_host:
-            self._is_serving_client = True
+        if self._is_long_running and not client._is_channel and not client._is_host:
+            # we're serving long-running requests so we must unregister the host filenos so no more clients can use
+            # this process until the current client is finished
+            for host in self._hosts:
+                self._event_manager.unregister(host._fileno)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -721,8 +723,11 @@ class Server:
             except:
                 pass
 
-        if not client._is_channel and not client._is_host:
-            self._is_serving_client = False
+        if self._is_long_running and not client._is_channel and not client._is_host:
+            # we're serving long-running requests so we must reregister the host filenos that we removed when the
+            # current client connected
+            for host in self._hosts:
+                self._event_manager.register(host._fileno, host._events)
 
         self._event_manager_unregister(client._fileno)
 
