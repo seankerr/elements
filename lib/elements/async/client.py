@@ -387,13 +387,12 @@ class HostClient (Client):
         Accept a new client connection.
         """
 
-        if not self._server._is_long_running or not self._server._is_serving_client:
-            client_socket, client_address = self._client_socket.accept()
+        client_socket, client_address = self._client_socket.accept()
 
-            try:
-                self._handle_client(client_socket, client_address, self._client_address)
+        try:
+            self._handle_client(client_socket, client_address, self._client_address)
 
-            except Exception, e:
-                client_socket.close()
+        except Exception, e:
+            client_socket.close()
 
-                raise ClientException("Cannot create client: %s" % e)
+            raise ClientException("Cannot create client: %s" % e)
