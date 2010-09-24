@@ -39,6 +39,7 @@ class Client:
                                        made a connection.
         """
 
+        self._is_blocking      = False                  # indicates the client socket blocking status
         self._client_address   = client_address         # client address
         self._client_socket    = client_socket          # client ip
         self._events           = EVENT_READ             # active events
@@ -327,9 +328,8 @@ class ChannelClient (Client):
 
         Client.__init__(self, socket, None, server, None)
 
-        self._is_blocking = False
-        self._is_channel  = True
-        self._pid         = pid
+        self._is_channel = True
+        self._pid        = pid
 
 # ----------------------------------------------------------------------------------------------------------------------
 
