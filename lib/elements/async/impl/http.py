@@ -883,6 +883,30 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def raise_error (self, response_code):
+        """
+        Display an error page for the response code.
+
+        @param response_code (str) The response code.
+        """
+
+        try:
+            action = self._server._error_actions[response_code]
+
+        except:
+            pos = response_code.find(" ")
+
+            if pos > -1:
+                raise ClientException("Missing action for error: %s" % response_code[:pos])
+
+            else:
+                raise ClientException("Invalid response code: %s" % response_code)
+
+        # execute the action here so any exceptions can be caught by the server
+        action[1].get(self)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def set_cookie (self, name, value="", expires=None, path="/", domain=None, http_only=False, secure=False):
         """
         Set a cookie.
