@@ -1488,6 +1488,7 @@ class HttpServer (Server):
 
         Server.__init__(self, **kwargs)
 
+        self._error_actions      = {}
         self._gmt_offset         = gmt_offset
         self._max_headers_length = max_headers_length
         self._max_request_length = max_request_length
@@ -1496,37 +1497,36 @@ class HttpServer (Server):
         self._upload_dir         = upload_dir
 
         # error actions
-        self._error_actions = { HTTP_400: (None, HttpAction(self, "400 Bad Request", HTTP_400)),
-                                HTTP_401: (None, HttpAction(self, "401 Unauthorized", HTTP_401)),
-                                HTTP_402: (None, HttpAction(self, "402 Payment Required", HTTP_402)),
-                                HTTP_403: (None, HttpAction(self, "403 Forbidden", HTTP_403)),
-                                HTTP_404: (None, HttpAction(self, "404 Not Found", HTTP_404)),
-                                HTTP_405: (None, HttpAction(self, "405 Method Not Allowed", HTTP_405)),
-                                HTTP_406: (None, HttpAction(self, "406 Not Acceptable", HTTP_406)),
-                                HTTP_407: (None, HttpAction(self, "407 Proxy Authentication Required", HTTP_407)),
-                                HTTP_408: (None, HttpAction(self, "408 Request Timeout", HTTP_408)),
-                                HTTP_409: (None, HttpAction(self, "409 Conflict", HTTP_409)),
-                                HTTP_410: (None, HttpAction(self, "410 Gone", HTTP_410)),
-                                HTTP_411: (None, HttpAction(self, "411 Length Required", HTTP_411)),
-                                HTTP_412: (None, HttpAction(self, "412 Precondition Failed", HTTP_412)),
-                                HTTP_413: (None, HttpAction(self, "413 Request Entity Too Large", HTTP_413)),
-                                HTTP_414: (None, HttpAction(self, "414 Request-URI Too Long", HTTP_414)),
-                                HTTP_415: (None, HttpAction(self, "415 Unsupported Media Type", HTTP_415)),
-                                HTTP_416: (None, HttpAction(self, "416 Requested Range Not Satisfiable", HTTP_416)),
-                                HTTP_417: (None, HttpAction(self, "417 Expectation Failed", HTTP_417)),
-                                HTTP_422: (None, HttpAction(self, "422 Unprocessable Entity", HTTP_422)),
-                                HTTP_423: (None, HttpAction(self, "423 Locked", HTTP_423)),
-                                HTTP_424: (None, HttpAction(self, "424 Failed Dependency", HTTP_424)),
-                                HTTP_426: (None, HttpAction(self, "426 Upgrade Required", HTTP_426)),
-                                HTTP_500: (None, HttpAction(self, "500 Internal Server Error", HTTP_500)),
-                                HTTP_501: (None, HttpAction(self, "501 Not Implemented", HTTP_501)),
-                                HTTP_502: (None, HttpAction(self, "502 Bad Gateway", HTTP_502)),
-                                HTTP_503: (None, HttpAction(self, "503 Service Unavailable", HTTP_503)),
-                                HTTP_504: (None, HttpAction(self, "504 Gateway Timeout", HTTP_504)),
-                                HTTP_505: (None, HttpAction(self, "505 HTTP Version Not Supported", HTTP_505)),
-                                HTTP_506: (None, HttpAction(self, "506 Variant Also Negotiates", HTTP_506)),
-                                HTTP_507: (None, HttpAction(self, "507 Insufficient Storage", HTTP_507)),
-                                HTTP_510: (None, HttpAction(self, "510 Not Extended", HTTP_510)) }
+        self.register_error_action(HTTP_400, HttpAction)
+        self.register_error_action(HTTP_402, HttpAction)
+        self.register_error_action(HTTP_403, HttpAction)
+        self.register_error_action(HTTP_404, HttpAction)
+        self.register_error_action(HTTP_405, HttpAction)
+        self.register_error_action(HTTP_406, HttpAction)
+        self.register_error_action(HTTP_407, HttpAction)
+        self.register_error_action(HTTP_408, HttpAction)
+        self.register_error_action(HTTP_409, HttpAction)
+        self.register_error_action(HTTP_410, HttpAction)
+        self.register_error_action(HTTP_411, HttpAction)
+        self.register_error_action(HTTP_412, HttpAction)
+        self.register_error_action(HTTP_413, HttpAction)
+        self.register_error_action(HTTP_414, HttpAction)
+        self.register_error_action(HTTP_415, HttpAction)
+        self.register_error_action(HTTP_416, HttpAction)
+        self.register_error_action(HTTP_417, HttpAction)
+        self.register_error_action(HTTP_422, HttpAction)
+        self.register_error_action(HTTP_423, HttpAction)
+        self.register_error_action(HTTP_424, HttpAction)
+        self.register_error_action(HTTP_426, HttpAction)
+        self.register_error_action(HTTP_500, HttpAction)
+        self.register_error_action(HTTP_501, HttpAction)
+        self.register_error_action(HTTP_502, HttpAction)
+        self.register_error_action(HTTP_503, HttpAction)
+        self.register_error_action(HTTP_504, HttpAction)
+        self.register_error_action(HTTP_505, HttpAction)
+        self.register_error_action(HTTP_506, HttpAction)
+        self.register_error_action(HTTP_507, HttpAction)
+        self.register_error_action(HTTP_510, HttpAction)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1563,6 +1563,29 @@ class HttpServer (Server):
             client.compose_headers()
             client.write("<h1>Internal Server Error</h1>")
             client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def register_error_action (self, response_code, action, args=dict()):
+        """
+        Register a custom error action.
+
+        @param response_code (str)   The response code under which we're registering the action.
+        @param action        (class) The custom error action.
+        @param args          (dict)  The action initialization arguments.
+        """
+
+        try:
+            code, title = response_code.split(" ", 1)
+
+        except:
+            raise ServerException("Invalid error action response code: %s" % response_code)
+
+        try:
+            self._error_actions[response_code] = (None, action(self, title=title, response_code=code, **args))
+
+        except Exception, e:
+            raise ServerException("Error action for response code %s failed to instantiate: %s" % (code, str(e)))
 
 # ----------------------------------------------------------------------------------------------------------------------
 
