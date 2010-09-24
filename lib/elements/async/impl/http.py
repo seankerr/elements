@@ -1578,6 +1578,9 @@ class HttpServer (Server):
         try:
             code, title = response_code.split(" ", 1)
 
+            # test code
+            int(code)
+
         except:
             raise ServerException("Invalid error action response code: %s" % response_code)
 
