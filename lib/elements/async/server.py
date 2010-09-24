@@ -415,9 +415,10 @@ class Server:
 
         self._clients[client._fileno] = client
 
-        if not client._is_channel or not client._is_blocking:
+        if not client._is_blocking:
             self._event_manager.register(client._fileno, client._events)
 
+        if not client._is_channel and not client._is_host:
             self._is_serving_client = True
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -720,7 +721,8 @@ class Server:
             except:
                 pass
 
-        self._is_serving_client = False
+        if not client._is_channel and not client._is_host:
+            self._is_serving_client = False
 
         self._event_manager_unregister(client._fileno)
 
