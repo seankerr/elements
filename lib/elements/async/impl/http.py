@@ -21,6 +21,8 @@ import time
 import urllib
 import urlparse
 
+import settings
+
 from elements.core           import elements
 from elements.core.exception import ClientException
 from elements.core.exception import HttpException
@@ -269,7 +271,7 @@ class HttpClient (Client):
         self.__files = []
 
         # read until we get the initial request line
-        self.read_delimiter("\r\n", self.handle_request, server._max_request_length)
+        self.read_delimiter("\r\n", self.handle_request, settings.http_max_request_length)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -500,7 +502,7 @@ class HttpClient (Client):
 
             # open a temp file to store the upload
             chars     = "".join((string.letters, string.digits))
-            temp_name = "/".join((self._server._upload_dir, "".join([random.choice(chars) for x in xrange(0, 25)])))
+            temp_name = "/".join((settings.http_upload_dir, "".join([random.choice(chars) for x in xrange(0, 25)])))
 
             file = { "error":      None,
                      "filename":   disposition[pos:disposition.find("\"", pos)],
@@ -656,7 +658,7 @@ class HttpClient (Client):
         self.in_headers = in_headers
 
         # read until we hit the end of the headers
-        self.read_delimiter("\r\n\r\n", self.handle_headers, self._server._max_headers_length)
+        self.read_delimiter("\r\n\r\n", self.handle_headers, settings.http_max_headers_length)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -764,7 +766,7 @@ class HttpClient (Client):
                 self.clear_write_buffer()
 
                 # read until we hit the end of the headers
-                self.read_delimiter("\r\n", self.handle_request, self._server._max_request_length)
+                self.read_delimiter("\r\n", self.handle_request, settings.http_max_request_length)
 
                 return
 
@@ -837,7 +839,7 @@ class HttpClient (Client):
 
                     self._multipart_file_size += len(chunk)
 
-                    if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size:
+                    if settings.http_max_upload_size and settings.http_max_upload_size < self._multipart_file_size:
                         # upload is too big
                         file["error"] = ERROR_UPLOAD_MAX_SIZE
 
@@ -854,7 +856,7 @@ class HttpClient (Client):
                 return
 
             # boundary has not been found
-            if len(data) >= self._server._upload_buffer_size:
+            if len(data) >= settings.http_upload_buffer_size:
                 # flush the buffer to file
                 chunk = data[:-len(delimiter)]
 
@@ -869,7 +871,7 @@ class HttpClient (Client):
                 buffer.write(data[len(data) - len(delimiter):])
 
                 # check file size limit
-                if self._server._max_upload_size and self._server._max_upload_size < self._multipart_file_size and \
+                if settings.http_max_upload_size and settings.http_max_upload_size < self._multipart_file_size and \
                    not self._is_multipart_maxed:
                     # upload is too big
                     multipart_file.close()
@@ -927,7 +929,7 @@ class HttpClient (Client):
 
         if expires:
             cookie += "; expires=" + datetime.datetime.fromtimestamp(time.time() + expires) \
-                                             .strftime("%A, %d %B %Y %H:%M:%S GMT" + self._server._gmt_offset)
+                                             .strftime("%A, %d %B %Y %H:%M:%S GMT" + settings.http_gmt_offset)
 
         if http_only:
             cookie += "; HttpOnly"
@@ -1496,29 +1498,14 @@ class HttpRequest (Client):
 
 class HttpServer (Server):
 
-    def __init__ (self, gmt_offset="-5", upload_dir="/tmp", upload_buffer_size=50000, max_upload_size=None,
-                  max_request_length=5000, max_headers_length=10000, **kwargs):
+    def __init__ (self, **kwargs):
         """
         Create a new HttpServer instance.
-
-        @param gmt_offset         (str) The GMT offset of the server.
-        @param upload_dir         (str) The absolute filesystem path to the directory where uploaded files will be
-                                        placed.
-        @param upload_buffer_size (int) The upload buffer size.
-        @param max_upload_size    (int) The maximum file upload size.
-        @param max_request_length (int) The maximum length of the initial request line.
-        @param max_headers_length (int) The maximum length for the headers.
         """
 
         Server.__init__(self, **kwargs)
 
-        self._error_actions      = {}
-        self._gmt_offset         = gmt_offset
-        self._max_headers_length = max_headers_length
-        self._max_request_length = max_request_length
-        self._max_upload_size    = max_upload_size
-        self._upload_buffer_size = upload_buffer_size
-        self._upload_dir         = upload_dir
+        self._error_actions = {}
 
         # error actions
         self.register_error_action(HTTP_400, HttpAction)
