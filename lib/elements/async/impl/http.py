@@ -1498,12 +1498,12 @@ class HttpRequest (Client):
 
 class HttpServer (Server):
 
-    def __init__ (self, **kwargs):
+    def __init__ (self, *args, **kwargs):
         """
         Create a new HttpServer instance.
         """
 
-        Server.__init__(self, **kwargs)
+        Server.__init__(self, *args, **kwargs)
 
         self._error_actions = {}
 
