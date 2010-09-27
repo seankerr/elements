@@ -15,12 +15,13 @@ http_gmt_offset         = "-5"
 http_max_headers_length = 10000
 http_max_request_length = 5000
 http_max_upload_size    = None
+http_memcache_hosts     = ["127.0.0.1:11211"]
+http_session_autostart  = False
+http_session_class      = MemcacheSession
+http_session_cookie     = "session_id"
+http_session_expiration = 30
 http_upload_buffer_size = 50000
 http_upload_dir         = "/tmp"
-
-session_class = MemcacheSession
-
-memcache_hosts = [["127.0.0.1:11211"]]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # DATABASE MODEL
