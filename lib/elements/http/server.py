@@ -118,6 +118,10 @@ class HttpClient (Client):
         if chunked_encoding:
             out_headers["Transfer-Encoding"] = "chunked"
 
+        if self.session:
+            # set session cookie
+            self.set_cookie(settings.http_session_cookie, self.session.session_id)
+
         # handle persistence
         if self._max_persistent_requests and self._request_count >= self._max_persistent_requests:
             self._persistence_type = None
@@ -231,6 +235,10 @@ class HttpClient (Client):
             self.raise_error(response_code.HTTP_400)
 
             return
+
+        if settings.http_session_autostart:
+            # auto-start session
+            self.start_session()
 
         # start content negotiation
         self.handle_content_negotiation()
@@ -403,6 +411,7 @@ class HttpClient (Client):
         self.out_headers          = {}
         self.read_delimiter       = self._orig_read_delimiter
         self.response_code        = response_code.HTTP_200
+        self.session              = None
         self.write                = self._orig_write
 
         # parse method, uri and protocol
@@ -478,8 +487,8 @@ class HttpClient (Client):
         This callback will be executed when this HttpClient instance is shutting down.
         """
 
-        # close the current multipart upload file pointer if one exists
         if self._multipart_file and not self._is_multipart_maxed:
+            # close the current multipart upload file pointer
             try:
                 self._multipart_file.close()
 
@@ -490,6 +499,14 @@ class HttpClient (Client):
         for file in self.__files:
             try:
                 os.unlink(file)
+
+            except:
+                pass
+
+        if self.session:
+            # save the session
+            try:
+                self.session.save()
 
             except:
                 pass
@@ -794,6 +811,15 @@ class HttpClient (Client):
         except:
             # file doesn't exist or permission denied
             return False
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def start_session (self):
+        """
+        Start the session. This is only useful when http_session_autostart is disabled.
+        """
+
+        self.session = settings.http_session_class.load(self.in_cookies.get(settings.http_session_cookie, None))
 
     # ------------------------------------------------------------------------------------------------------------------
 
