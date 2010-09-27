@@ -30,6 +30,7 @@ from elements.core.exception import ServerException
 from elements.async.client   import Client
 from elements.async.server   import Server
 from elements.http.action    import HttpAction
+from elements.http.action    import SecureHttpAction
 from elements.http           import response_code
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -734,6 +735,21 @@ class HttpClient (Client):
 
         # execute the action here so any exceptions can be caught by the server
         action[1].get(self)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def redirect (self, url):
+        """
+        Redirect the request.
+
+        @param url (str) The URL.
+        """
+
+        self.out_headers["Location"] = url
+        self.response_code           = response_code.HTTP_307
+
+        self.compose_headers()
+        self.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1447,8 +1463,9 @@ class RoutingHttpClient (HttpClient):
         This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
-        route           = self.in_headers["SCRIPT_NAME"].split(":", 1)
-        pattern, action = self._server._routes.get(route[0], self._server._error_actions[response_code.HTTP_404])
+        route                      = self.in_headers["SCRIPT_NAME"].split(":", 1)
+        pattern, action, is_secure = self._server._routes.get(route[0],
+                                                              self._server._error_actions[response_code.HTTP_404])
 
         if not pattern:
             # route doesn't require validated data
@@ -1534,6 +1551,14 @@ class RoutingHttpServer (HttpServer):
                 except Exception, e:
                     raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
 
+                if not issubclass(action, SecureHttpAction):
+                    # this route does not require authentication
+                    is_secure = False
+
+                else:
+                    # this route requires authentication
+                    is_secure = True
+
                 if pattern:
                     # this route requires a pattern
                     if type(pattern) != str:
@@ -1552,7 +1577,7 @@ class RoutingHttpServer (HttpServer):
                     try:
                         self._routes[script_name] = (pattern, action(server=self, title="Method Not Supported",
                                                                      response_code=response_code.HTTP_405,
-                                                                     **action_kwargs))
+                                                                     **action_kwargs), is_secure)
 
                     except Exception, e:
                         raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name,
@@ -1563,7 +1588,7 @@ class RoutingHttpServer (HttpServer):
                     try:
                         self._routes[script_name] = (None, action(server=self, title="Method Not Supported",
                                                                   response_code=response_code.HTTP_405,
-                                                                  **action_kwargs))
+                                                                 **action_kwargs), is_secure)
 
                     except Exception, e:
                         raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
