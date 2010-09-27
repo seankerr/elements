@@ -12,9 +12,9 @@ import sys
 
 sys.path.append(os.path.abspath("../lib"))
 
-from elements.async.impl.http import HttpAction
-from elements.async.impl.http import RoutingHttpServer
-from elements.async.impl.http import StaticHttpAction
+from elements.http.action import HttpAction
+from elements.http.action import StaticHttpAction
+from elements.http.server import RoutingHttpServer
 
 # ----------------------------------------------------------------------------------------------------------------------
 
