@@ -5,6 +5,8 @@
 #
 # Author: Sean Kerr <sean@code-box.org>
 
+from elements.http.session import MemcacheSession
+
 # ----------------------------------------------------------------------------------------------------------------------
 # HTTP
 # ----------------------------------------------------------------------------------------------------------------------
@@ -15,6 +17,10 @@ http_max_request_length = 5000
 http_max_upload_size    = None
 http_upload_buffer_size = 50000
 http_upload_dir         = "/tmp"
+
+session_class = MemcacheSession
+
+memcache_hosts = [["127.0.0.1:11211"]]
 
 # ----------------------------------------------------------------------------------------------------------------------
 # DATABASE MODEL
