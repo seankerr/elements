@@ -294,4 +294,6 @@ class MemcacheSession (Session):
         if status in (True, False):
             self._data["__is_authenticated__"] = status
 
+            return True
+
         raise ServerException("Invalid authenticated status")
