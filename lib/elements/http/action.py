@@ -174,4 +174,4 @@ class StaticHttpAction (HttpAction):
 
         if not file.startswith(self._fs_root) or file == self._fs_root or not client.serve_static_file(file):
             # wrong location or file doesn't exist/can't be opened for reading
-            client._server._error_actions[response_code.HTTP_404][1].get(client)
+            client.raise_error(response_code.HTTP_404)
