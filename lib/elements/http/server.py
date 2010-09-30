@@ -734,7 +734,7 @@ class HttpClient (Client):
                 raise ClientException("Invalid response code: %s" % response_code)
 
         # execute the action here so any exceptions can be caught by the server
-        action[1].get(self)
+        getattr(action[1], self.in_headers.get("REQUEST_METHOD", "GET").lower())(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1449,7 +1449,8 @@ class HttpServer (Server):
             raise ServerException("Invalid error action response code: %s" % response_code)
 
         try:
-            self._error_actions[response_code] = (None, action(self, title=title, response_code=code, **args))
+            self._error_actions[response_code] = (None, action(self, title=title, response_code=code, **args),
+                                                  False)
 
         except Exception, e:
             raise ServerException("Error action for response code %s failed to instantiate: %s" % (code, str(e)))
@@ -1466,6 +1467,17 @@ class RoutingHttpClient (HttpClient):
         route                      = self.in_headers["SCRIPT_NAME"].split(":", 1)
         pattern, action, is_secure = self._server._routes.get(route[0],
                                                               self._server._error_actions[response_code.HTTP_404])
+
+        if is_secure:
+            if not self.session or not self.session.is_authenticated():
+                # this route requires authentication
+                self.redirect(settings.http_login_url)
+
+                return
+
+            if not action.check_credentials(self):
+                # user doesn't have required credentials
+                self.redirect(settings.http_credentials_url)
 
         if not pattern:
             # route doesn't require validated data
