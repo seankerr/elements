@@ -1479,6 +1479,8 @@ class RoutingHttpClient (HttpClient):
                 # user doesn't have required credentials
                 self.redirect(settings.http_credentials_url)
 
+                return
+
         if not pattern:
             # route doesn't require validated data
             getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
