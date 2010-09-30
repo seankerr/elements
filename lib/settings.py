@@ -5,13 +5,15 @@
 #
 # Author: Sean Kerr <sean@code-box.org>
 
-from elements.http.session import MemcacheSession
-
 # ----------------------------------------------------------------------------------------------------------------------
 # HTTP
 # ----------------------------------------------------------------------------------------------------------------------
 
+from elements.http.session import MemcacheSession
+
+http_credentials_url    = "/"
 http_gmt_offset         = "-5"
+http_login_url          = "/login"
 http_max_headers_length = 10000
 http_max_request_length = 5000
 http_max_upload_size    = None
