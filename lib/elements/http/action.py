@@ -148,7 +148,16 @@ class HttpAction:
 
 class SecureHttpAction (HttpAction):
 
-    pass
+    def check_credentials (self, client):
+        """
+        Check the client credentials.
+
+        @param client (HttpClient) The HttpClient instance.
+
+        @return (bool) True, if the client has the required credentials, otherwise False.
+        """
+
+        return True
 
 # ----------------------------------------------------------------------------------------------------------------------
 
