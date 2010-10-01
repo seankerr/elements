@@ -75,7 +75,7 @@ class DatabaseModelMetaclass (type):
     def __init__ (cls, name, bases, members):
         """
         Create a new DatabaseModelMetaclass instance.
-        
+
         @param cls     (class) The metaclass instance.
         @param name    (str)   The class name.
         @param bases   (tuple) The class base and interfaces.
@@ -122,7 +122,7 @@ class DatabaseModelMetaclass (type):
         # check database pool
         if not DatabaseModelMetaclass.__POOL_INIT:
             init()
-            
+
             DatabaseModelMetaclass.__POOL_INIT = True
 
         if hasattr(cls, "database"):
@@ -140,7 +140,7 @@ class DatabaseModelMetaclass (type):
             cls.Meta.database = "default"
 
         cls.Meta.db = settings.databases[cls.Meta.database]["instance"]
-        
+
         # check primary key
         if type(cls.Meta.primary_key) != str:
             raise DatabaseModelException("%s has an invalid primary key" % name)
@@ -231,7 +231,7 @@ class DatabaseModel:
         Retrieve a field value.
 
         @param name (str) The field name.
-        
+
         @return (object) The field value.
         """
 
@@ -244,7 +244,7 @@ class DatabaseModel:
         Retrieve a field value.
 
         @param name (str) The field name.
-        
+
         @return (object) The field value.
         """
 
@@ -332,15 +332,17 @@ class DatabaseModel:
     # ------------------------------------------------------------------------------------------------------------------
 
     @classmethod
-    def filter (cls, filters, query_type="AND"):
+    def filter (cls, filters, query_type="AND", connection=None):
         """
         Retrieve a list of filtered records for this model.
 
-        @param filters    (tuple) The tuple or list consisting of tuples or lists of column, operator and value entries.
-        @param query_type (str)   The type of filtering, either AND or OR.
+        @param filters    (tuple)  The tuple or list consisting of tuples or lists of column, operator and value
+                                   entries.
+        @param query_type (str)    The type of filtering, either AND or OR.
+        @param connection (object) The database connection.
         """
 
-        return DatabaseModelQuery(cls, filters, query_type)
+        return DatabaseModelQuery(cls, filters, query_type, connection)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -395,7 +397,7 @@ class DatabaseModel:
     def get_connection (self, connection):
         """
         Retrieve the current connection that is used in this model.
-        
+
         @return (object) The live database connection, if set_connection() has assigned a connection, otherwise None.
         """
 
@@ -581,13 +583,14 @@ class DatabaseModel:
 
 class DatabaseModelQuery:
 
-    def __init__ (self, cls, filters, query_type="AND"):
+    def __init__ (self, cls, filters, query_type="AND", connection=None):
         """
         Create a new DatabaseModelQuery instance.
-        
-        @param cls        (class) The parent DatabaseModel class under which this query will operate.
-        @param filters    (tuple) The tuple or list consisting of tuples or lists of column, operator and value entries.
-        @param query_type (str)   The type of filtering, either AND or OR.
+
+        @param cls        (class)  The parent DatabaseModel class under which this query will operate.
+        @param filters    (tuple)  The tuple or list consisting of tuples or lists of column, operator and value entries.
+        @param query_type (str)    The type of filtering, either AND or OR.
+        @param connection (object) The database connection.
         """
 
         if not isinstance(cls(), DatabaseModel):
@@ -600,7 +603,7 @@ class DatabaseModelQuery:
             raise DatabaseModelException("Query type must be AND or OR")
 
         self._cls        = cls
-        self._connection = None
+        self._connection = connection
         self._limit      = None
         self._offset     = None
         self._order      = None
@@ -647,7 +650,7 @@ class DatabaseModelQuery:
 
                 else:
                     self._query += (" %s NOT IN (" % field) + ",".join(ins) + ")"
-            
+
             elif type(value) == bool:
                 if value:
                     self._query += " %s" % field
@@ -730,7 +733,7 @@ class DatabaseModelQuery:
                         break
 
                     records.append(dict(zip(meta.columns, record)))
-            
+
             return records
 
         except Exception, e:
@@ -750,7 +753,7 @@ class DatabaseModelQuery:
         Set the limit of records.
 
         @param limit (int) The record limit.
-        
+
         @return (object) This exact DatabaseModelQuery instance.
         """
 
@@ -771,12 +774,12 @@ class DatabaseModelQuery:
         """
 
         self.offset(offset)
-        
+
         if limit > 1000000:
             # this is to protect from getslice functionality where if a limit isn't set, it is
             # assumed to be the value of the long max
             limit = None
-            
+
         self.limit(limit)
 
         return self
@@ -786,7 +789,7 @@ class DatabaseModelQuery:
     def get_connection (self, connection):
         """
         Retrieve the current connection that is being used.
-        
+
         @return (object) The live database connection, if set_connection() has assigned a connection, otherwise None.
         """
 
@@ -815,7 +818,7 @@ class DatabaseModelQuery:
     def offset (self, offset):
         """
         Set the record offset.
-        
+
         @param offset (int) The record offset.
 
         @return (object) This exact DatabaseModelQuery instance.
