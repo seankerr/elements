@@ -175,7 +175,7 @@ class StaticHttpAction (HttpAction):
 
         HttpAction.__init__(self, **kwargs)
 
-        self._fs_root = fs_root
+        self._fs_root = os.path.realpath(fs_root)
         self._param   = param
 
     # ------------------------------------------------------------------------------------------------------------------
