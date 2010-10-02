@@ -5,6 +5,8 @@
 #
 # Author: Sean Kerr <sean@code-box.org>
 
+import os
+
 from elements.http import response_code
 
 # ----------------------------------------------------------------------------------------------------------------------
