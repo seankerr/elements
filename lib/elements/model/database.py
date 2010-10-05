@@ -154,22 +154,14 @@ class DatabaseModelMetaclass (type):
                                                                                                 cls.Meta.primary_key))
 
         # get column details
-        try:
-            connection = None
-            cursor     = None
-            connection = cls.Meta.db.connection()
-            cursor     = connection.cursor()
+        connection = None
+        cursor     = None
+        connection = cls.Meta.db.connection()
+        cursor     = connection.cursor()
 
-            cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
+        cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
 
-            [cls.Meta.columns.append(column[0]) for column in cursor.description]
-
-        finally:
-            if cursor:
-                cursor.close()
-
-            if connection:
-                connection.close()
+        [cls.Meta.columns.append(column[0]) for column in cursor.description]
 
         return type.__init__(cls, name, bases, members)
 
@@ -276,9 +268,13 @@ class DatabaseModel:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def delete (self):
+    def delete (self, connection=None, commit=True):
         """
         Delete the record from the database that is associated with the primary key in this model.
+
+        @param connection (object) The database connection.
+        @param commit     (bool)   Indicates that the current transaction should be auto-committed. This is only
+                                   useful when passing in a connection object.
 
         @return (bool) True, upon success, otherwise False.
         """
@@ -290,33 +286,26 @@ class DatabaseModel:
             raise DatabaseModelException("This DatabaseModel instance does not represent an active database record")
 
         try:
-            if self.__dict__["_connection"]:
-                close      = False
-                cursor     = None
-                connection = self.__dict__["_connection"]
+            if not connection:
+                if self.__dict__["_connection"]:
+                    connection = self.__dict__["_connection"]
 
-            else:
-                close      = True
-                cursor     = None
-                connection = settings.databases[meta.database]["instance"].connection()
+                else:
+                    connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
 
             cursor.execute("DELETE FROM \"" + meta.table + "\" WHERE " + meta.primary_key + " = %s",
                            (values[meta.primary_key],))
 
-            return cursor.rowcount and cursor.rowcount > 0
+            return cursor.rowcount > 0
 
         except Exception, e:
             raise DatabaseModelException(str(e))
 
         finally:
-            if cursor:
-                cursor.close()
-
-            if close and connection:
+            if commit and connection:
                 connection.commit()
-                connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -358,14 +347,12 @@ class DatabaseModel:
         meta = cls.Meta
 
         try:
-            if connection:
-                close  = False
-                cursor = None
+            if not connection:
+                connection = settings.databases[meta.database]["instance"].connection()
+                set_conn   = False
 
             else:
-                close      = True
-                cursor     = None
-                connection = settings.databases[meta.database]["instance"].connection()
+                set_conn = True
 
             cursor = connection.cursor()
 
@@ -376,21 +363,14 @@ class DatabaseModel:
             if record:
                 record = cls(**dict(zip(meta.columns, record)))
 
-                if not close:
+                if set_conn:
                     # give the passed connection to the object as well
-                    record.connection(connection)
+                    record.set_connection(connection)
 
             return record
 
         except Exception, e:
             raise DatabaseModelException(str(e))
-
-        finally:
-            if cursor:
-                cursor.close()
-
-            if close and connection:
-                connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -405,10 +385,14 @@ class DatabaseModel:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def save (self):
+    def save (self, connection=None, commit=True):
         """
         Save the record in the database that is associated with the primary key in this model, and if no primary key
         is set than create a new record.
+
+        @param connection (object) The database connection.
+        @param commit     (bool)   Indicates that the current transaction should be auto-committed. This is only
+                                   useful when passing in a connection object.
 
         @return (bool) True, upon success.
         """
@@ -416,15 +400,12 @@ class DatabaseModel:
         meta = self.Meta
 
         try:
-            if self.__dict__["_connection"]:
-                close      = False
-                cursor     = None
-                connection = self.__dict__["_connection"]
+            if not connection:
+                if self.__dict__["_connection"]:
+                    connection = self.__dict__["_connection"]
 
-            else:
-                close      = True
-                cursor     = None
-                connection = settings.databases[meta.database]["instance"].connection()
+                else:
+                    connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
             values = self.values()
@@ -463,18 +444,14 @@ class DatabaseModel:
                 cursor.execute("INSERT INTO \"" + meta.table + "\" (" + ",".join(in_keys) + ") VALUES (" + \
                                ",".join(in_fields) + ")", in_values)
 
-            return cursor.rowcount and cursor.rowcount > 0
+            return cursor.rowcount > 0
 
         except Exception, e:
             raise DatabaseModelException(str(e))
 
         finally:
-            if cursor:
-                cursor.close()
-
-            if close and connection:
+            if commit and connection:
                 connection.commit()
-                connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -523,28 +500,22 @@ class DatabaseModel:
 
             try:
                 if self.__dict__["_connection"]:
-                    close      = False
                     connection = self.__dict__["_connection"]
 
                 else:
-                    close      = True
                     connection = settings.databases[meta.database]["instance"].connection()
 
                 values = self.values()
 
                 for key, model in meta.foreign_keys.items():
                     if key in values:
-                        if not model.get(values[key], connection=connection):
+                        if not model.get(values[key], connection):
                             errors[key] = settings.dbmodel_fk_constraint_err
 
                 return len(errors) == 0
 
             except Exception, e:
                 raise DatabaseModelException(str(e))
-
-            finally:
-                if close and connection:
-                    connection.close()
 
         return False
 
@@ -700,14 +671,12 @@ class DatabaseModelQuery:
 
         try:
             if self._connection:
-                close      = False
-                cursor     = None
                 connection = self._connection
+                set_conn   = True
 
             else:
-                close      = True
-                cursor     = None
                 connection = settings.databases[meta.database]["instance"].connection()
+                set_conn   = False
 
             cursor = connection.cursor()
             cursor.execute(query, self._values)
@@ -722,7 +691,12 @@ class DatabaseModelQuery:
                     if not record:
                         break
 
-                    records.append(self._cls(**dict(zip(meta.columns, record))))
+                    record = self._cls(**dict(zip(meta.columns, record)))
+
+                    records.append(record)
+
+                    if set_conn:
+                        record.set_connection(connection)
 
             else:
                 # don't convert records
@@ -738,13 +712,6 @@ class DatabaseModelQuery:
 
         except Exception, e:
             raise DatabaseModelException(str(e))
-
-        finally:
-            if cursor:
-                cursor.close()
-
-            if close and connection:
-                connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
