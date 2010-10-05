@@ -233,7 +233,7 @@ class MemcacheSession (Session):
                 except Exception, e:
                     raise ServerException("Failed to load session: %s" % str(e))
 
-            # session has expired--continue on and create a new one
+            # session has expired--continue on and create a new one (but reuse the same session id)
 
         else:
             # generate a new session id
