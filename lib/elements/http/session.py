@@ -247,32 +247,25 @@ class MemcacheSession (Session):
             if data:
                 # session exists
                 try:
-                    data = pickle.loads(data)
+                    data    = pickle.loads(data)
+                    session = MemcacheSession(session_id, memcache)
 
-                    # check expiration
-                    if time.time() <= data["__expiration__"]:
-                        # session is still valid
-                        session = MemcacheSession(session_id, memcache)
+                    session.merge(data)
 
-                        session.merge(data)
-
-                        return session
+                    return session
 
                 except Exception, e:
                     raise ServerException("Failed to load session: %s" % str(e))
 
-            # session has expired--continue on and create a new one (but reuse the same session id)
+        # generate a new session id
+        chars = "".join((string.letters, string.digits))
 
-        else:
-            # generate a new session id
-            chars = "".join((string.letters, string.digits))
+        while True:
+            session_id = "".join([random.choice(chars) for x in xrange(0, 25)])
 
-            while True:
-                session_id = "".join([random.choice(chars) for x in xrange(0, 25)])
-
-                if not memcache.get("session_" + session_id):
-                    # session id is available
-                    break
+            if not memcache.get("session_" + session_id):
+                # session id is available
+                break
 
         # store the initial session data
         data    = { "__is_authenticated__": False }
@@ -302,10 +295,9 @@ class MemcacheSession (Session):
         Save the session.
         """
 
-        self._data["__expiration__"] = time.time() + (settings.http_session_expiration * 60)
-
         try:
-            self._memcache.set("session_" + self._session_id, pickle.dumps(self._data))
+            self._memcache.set("session_" + self._session_id, pickle.dumps(self._data),
+                               time=(settings.http_session_expiration * 60))
 
         except Exception, e:
             raise ServerException("Failed to save session: %s" % str(e))
