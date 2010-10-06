@@ -35,6 +35,17 @@ class Session:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def __delitem__ (self, name):
+        """
+        Remove a value.
+
+        @param name (str) The name.
+        """
+
+        raise ServerException("Session.__delitem__() must be overridden")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def __getitem__ (self, name):
         """
         Retrieve a value.
@@ -159,6 +170,22 @@ class MemcacheSession (Session):
 
         self._data     = dict()
         self._memcache = backend
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def __delitem__ (self, name):
+        """
+        Remove a value.
+
+        @param name (str) The name.
+        """
+
+        if name in self._data:
+            del self._data[name]
+
+            return
+
+        raise ServerException("Non-existent key: %s" % name)
 
     # ------------------------------------------------------------------------------------------------------------------
 
