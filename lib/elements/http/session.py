@@ -60,6 +60,20 @@ class Session:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def get (self, name, default=None):
+        """
+        Retrieve a value. If the value does not exist, return the default value.
+
+        @param name    (str)    The name.
+        @param default (object) The default return value.
+
+        @return (object) The value, if it exists, otherwise the default value.
+        """
+
+        raise ServerException("Session.get() must be overridden")
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def is_authenticated (self):
         """
         Indicates that the session is authenticated.
@@ -170,6 +184,20 @@ class MemcacheSession (Session):
         """
 
         self._data[name] = value
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def get (self, name, default=None):
+        """
+        Retrieve a value. If the value does not exist, return the default value.
+
+        @param name    (str)    The name.
+        @param default (object) The default return value.
+
+        @return (object) The value, if it exists, otherwise the default value.
+        """
+
+        return self._data.get(name, default)
 
     # ------------------------------------------------------------------------------------------------------------------
 
