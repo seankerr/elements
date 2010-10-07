@@ -12,6 +12,7 @@ except:
     import StringIO
 
 import datetime
+import decimal
 import mimetypes
 import os
 import random
@@ -836,6 +837,47 @@ class HttpClient (Client):
         """
 
         self.session = settings.http_session_class.load(self.in_cookies.get(settings.http_session_cookie, None))
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def validate (self, types, *args):
+        """
+        Attempt to validate request parameters.
+
+        @param types (str) The expected types of the parameters.
+        """
+
+        values = []
+
+        if len(types) != len(args):
+            raise ClientException("Type list is not the same length as the parameter list")
+
+        try:
+            for i, param_type in enumerate(types):
+                param_value = self.params.get(args[i][0], args[i][1])
+
+                if param_value == args[i][1]:
+                    values.append(param_value)
+
+                    continue
+
+                try:
+                    if param_type == "i":
+                        values.append(int(param_value))
+
+                    elif param_type == "f":
+                        values.append(float(param_value))
+
+                    elif param_type == "d":
+                        values.append(decimal.Decimal(param_value))
+
+                except:
+                    values.append(args[i][1])
+
+            return values
+
+        except IndexError:
+            raise ClientException("Invalid parameter type")
 
     # ------------------------------------------------------------------------------------------------------------------
 
