@@ -1532,7 +1532,7 @@ class RoutingHttpClient (HttpClient):
         # check for expected data
         if len(route) == 1:
             # route didn't contain data, so it's automatically invalidated (serve 404 as if the url doesn't exist)
-            pattern, action = self._server._error_actions[response_code.HTTP_404]
+            pattern, action, is_secure = self._server._error_actions[response_code.HTTP_404]
 
             getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
 
@@ -1546,7 +1546,7 @@ class RoutingHttpClient (HttpClient):
 
         if not match:
             # data did not validate successfully (serve 404 as if the url doesn't exist)
-            pattern, action = self._server._error_actions[response_code.HTTP_404]
+            pattern, action, is_secure = self._server._error_actions[response_code.HTTP_404]
 
             getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
 
