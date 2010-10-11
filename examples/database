@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#
+# This file is part of Elements.
+# Copyright (c) 2010 Sean Kerr. All rights reserved.
+#
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
+# Author: Sean Kerr <sean@code-box.org>
+
+import os
+import sys
+
+sys.path.append(os.path.abspath("../lib"))
+
+from elements.model import database
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+database.init()
+
+dbconn = None
+
+try:
+    # get a database connection and cursor
+    dbconn = database.get_connection()
+    cursor = dbconn.cursor()
+
+    # create test table
+    cursor.execute("CREATE TABLE test_table (test_table_id INT NOT NULL PRIMARY KEY, value VARCHAR(50) NOT NULL)")
+
+    # add a couple records
+    cursor.execute("INSERT INTO test_table (test_table_id, value) VALUES (1, 'Test value 1')")
+    cursor.execute("INSERT INTO test_table (test_table_id, value) VALUES (2, 'Test value 2')")
+    cursor.execute("INSERT INTO test_table (test_table_id, value) VALUES (3, 'Test value 3')")
+    cursor.execute("INSERT INTO test_table (test_table_id, value) VALUES (4, 'Test value 4')")
+
+    # grab records
+    cursor.execute("SELECT * FROM test_table")
+
+    print database.fetchone(cursor)
+    print database.fetchone(cursor)
+    print database.fetchone(cursor)
+    print database.fetchone(cursor)
+
+finally:
+    if dbconn:
+        # delete test table
+        cursor.execute("DROP TABLE test_table")
+
+        cursor.close()
+        dbconn.close()
