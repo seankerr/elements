@@ -1538,9 +1538,6 @@ class RoutingHttpClient (HttpClient):
 
             return
 
-        # update headers to reflect proper route details
-        self.in_headers["SCRIPT_NAME"], self.in_headers["SCRIPT_ARGS"] = route
-
         # validate data
         match = pattern.match(route[1])
 
