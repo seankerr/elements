@@ -18,6 +18,58 @@ from elements.model.model    import Int
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def fetch_all (cursor):
+    """
+    Retrieve all records from the cursor.
+
+    @param cursor (object) The database cursor.
+
+    @return (list) A list of dicts which represent each record.
+    """
+
+    fields  = [field[0] for field in cursor.description]
+    records = []
+
+    for record in cursor.fetchall():
+        records.append(dict(zip(fields, record)))
+
+    return records
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def fetch_many (cursor, count):
+    """
+    Retrieve one or more records from the cursor.
+
+    @param cursor (object) The database cursor.
+    @param count  (int)    The count of records to retrieve.
+
+    @return (list) A list of dicts which represent each record.
+    """
+
+    fields  = [field[0] for field in cursor.description]
+    records = []
+
+    for record in cursor.fetchmany(count):
+        records.append(dict(zip(fields, record)))
+
+    return records
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+def fetch_one (cursor):
+    """
+    Retrieve a single record from the cursor.
+
+    @param cursor (object) The database cursor.
+
+    @return (dict) A single dict representing a database record.
+    """
+
+    return dict(zip([field[0] for field in cursor.description], cursor.fetchone()))
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 def get_connection (name="default"):
     """
     Retrieve a database connection.
@@ -152,16 +204,22 @@ class DatabaseModelMetaclass (type):
         if not isinstance(cls.Meta.model.Meta.fields[cls.Meta.primary_key], Int):
             raise DatabaseModelException("%s primary key field '%s' is not an integer field" % (name,
                                                                                                 cls.Meta.primary_key))
-
         # get column details
         connection = None
-        cursor     = None
-        connection = cls.Meta.db.connection()
-        cursor     = connection.cursor()
 
-        cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
+        try:
+            # get column details
+            connection = cls.Meta.db.connection()
+            cursor     = connection.cursor()
 
-        [cls.Meta.columns.append(column[0]) for column in cursor.description]
+            cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
+
+            [cls.Meta.columns.append(column[0]) for column in cursor.description]
+
+        finally:
+            if connection:
+                cursor.close()
+                connection.close()
 
         return type.__init__(cls, name, bases, members)
 
@@ -279,6 +337,7 @@ class DatabaseModel:
         @return (bool) True, upon success, otherwise False.
         """
 
+        close  = True
         meta   = self.Meta
         values = self.values()
 
@@ -286,12 +345,14 @@ class DatabaseModel:
             raise DatabaseModelException("This DatabaseModel instance does not represent an active database record")
 
         try:
-            if not connection:
-                if self.__dict__["_connection"]:
-                    connection = self.__dict__["_connection"]
+            if connection:
+                close = False
 
-                else:
-                    connection = settings.databases[meta.database]["instance"].connection()
+            elif self.__dict__["_connection"]:
+                connection = self.__dict__["_connection"]
+
+            else:
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
 
@@ -304,8 +365,14 @@ class DatabaseModel:
             raise DatabaseModelException(str(e))
 
         finally:
-            if commit and connection:
-                connection.commit()
+            if connection:
+                cursor.close()
+
+                if commit:
+                    connection.commit()
+
+                if close:
+                    connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -344,15 +411,15 @@ class DatabaseModel:
         @param connection (object) The connection to use for this operation.
         """
 
-        meta = cls.Meta
+        close = True
+        meta  = cls.Meta
 
         try:
-            if not connection:
-                connection = settings.databases[meta.database]["instance"].connection()
-                set_conn   = False
+            if connection:
+                close = False
 
             else:
-                set_conn = True
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
 
@@ -363,7 +430,7 @@ class DatabaseModel:
             if record:
                 record = cls(**dict(zip(meta.columns, record)))
 
-                if set_conn:
+                if not close:
                     # give the passed connection to the object as well
                     record.set_connection(connection)
 
@@ -371,6 +438,13 @@ class DatabaseModel:
 
         except Exception, e:
             raise DatabaseModelException(str(e))
+
+        finally:
+            if connection:
+                cursor.close()
+
+                if close:
+                    connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -397,15 +471,18 @@ class DatabaseModel:
         @return (bool) True, upon success.
         """
 
-        meta = self.Meta
+        close = True
+        meta  = self.Meta
 
         try:
-            if not connection:
-                if self.__dict__["_connection"]:
-                    connection = self.__dict__["_connection"]
+            if connection:
+                close = False
 
-                else:
-                    connection = settings.databases[meta.database]["instance"].connection()
+            elif self.__dict__["_connection"]:
+                connection = self.__dict__["_connection"]
+
+            else:
+                connection = settings.databases[meta.database]["instance"].connection()
 
             cursor = connection.cursor()
             values = self.values()
@@ -450,8 +527,11 @@ class DatabaseModel:
             raise DatabaseModelException(str(e))
 
         finally:
-            if commit and connection:
-                connection.commit()
+            if connection:
+                cursor.close()
+
+                if commit:
+                    connection.commit()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -477,9 +557,11 @@ class DatabaseModel:
         @return (bool) True, upon success, otherwise False.
         """
 
-        meta      = self.Meta
-        model     = self.__dict__["_model_inst"]
-        validated = model.validate()
+        close      = True
+        connection = None
+        meta       = self.Meta
+        model      = self.__dict__["_model_inst"]
+        validated  = model.validate()
 
         if not validated:
             # get the validation errors and if the length of them is one and the error is from the primary key,
@@ -500,6 +582,7 @@ class DatabaseModel:
 
             try:
                 if self.__dict__["_connection"]:
+                    close      = False
                     connection = self.__dict__["_connection"]
 
                 else:
@@ -516,6 +599,13 @@ class DatabaseModel:
 
             except Exception, e:
                 raise DatabaseModelException(str(e))
+
+            finally:
+                if connection:
+                    cursor.close()
+
+                    if close:
+                        connection.close()
 
         return False
 
@@ -657,8 +747,10 @@ class DatabaseModelQuery:
         @return (object) A list of records, upon success, otherwise None.
         """
 
-        query = self._query
-        meta  = self._cls.Meta
+        close      = True
+        connection = None
+        query      = self._query
+        meta       = self._cls.Meta
 
         if self._order:
             query += " ORDER BY %s" % self._order
@@ -671,12 +763,11 @@ class DatabaseModelQuery:
 
         try:
             if self._connection:
+                close      = False
                 connection = self._connection
-                set_conn   = True
 
             else:
                 connection = settings.databases[meta.database]["instance"].connection()
-                set_conn   = False
 
             cursor = connection.cursor()
             cursor.execute(query, self._values)
@@ -695,7 +786,7 @@ class DatabaseModelQuery:
 
                     records.append(record)
 
-                    if set_conn:
+                    if not close:
                         record.set_connection(connection)
 
             else:
@@ -712,6 +803,13 @@ class DatabaseModelQuery:
 
         except Exception, e:
             raise DatabaseModelException(str(e))
+
+        finally:
+            if connection:
+                cursor.close()
+
+                if close:
+                    connection.close()
 
     # ------------------------------------------------------------------------------------------------------------------
 
