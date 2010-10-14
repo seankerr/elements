@@ -871,6 +871,9 @@ class HttpClient (Client):
                     elif param_type == "d":
                         values.append(decimal.Decimal(param_value))
 
+                    else:
+                        values.append(param_value)
+
                 except:
                     values.append(args[i][1])
 
