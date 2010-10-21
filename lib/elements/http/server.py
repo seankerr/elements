@@ -454,7 +454,7 @@ class HttpClient (Client):
                        "REMOTE_PORT":       self._client_address[1],
                        "REQUEST_METHOD":    method.upper(),
                        "REQUEST_URI":       uri,
-                       "SCRIPT_NAME":       uri,
+                       "REQUEST_URL":       uri,
                        "SERVER_ADDR":       self._server_address[0],
                        "SERVER_PORT":       self._server_address[1],
                        "SERVER_PROTOCOL":   protocol }
@@ -466,7 +466,7 @@ class HttpClient (Client):
             query_string               = uri[pos + 1:]
             params                     = urlparse.parse_qs(query_string, True)
             in_headers["QUERY_STRING"] = query_string
-            in_headers["SCRIPT_NAME"]  = uri[:pos]
+            in_headers["REQUEST_URI"]  = uri[:pos]
 
             for key, value in params.items():
                 if len(value) == 1:
@@ -1509,7 +1509,7 @@ class RoutingHttpClient (HttpClient):
         This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
-        route                      = self.in_headers["SCRIPT_NAME"].split(":", 1)
+        route                      = self.in_headers["REQUEST_URI"].split(":", 1)
         pattern, action, is_secure = self._server._routes.get(route[0],
                                                               self._server._error_actions[response_code.HTTP_404])
 
