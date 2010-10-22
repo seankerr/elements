@@ -588,20 +588,17 @@ class HttpClient (Client):
 
             self._static_file = None
 
-            self.clear_events()
+        elif self._is_allowing_persistence and self._persistence_type:
+            # allowing another request
+            self.clear_write_buffer()
 
-        else:
-            if self._is_allowing_persistence and self._persistence_type:
-                # allowing another request
-                self.clear_write_buffer()
+            # read until we hit the end of the headers
+            self.read_delimiter("\r\n", self.handle_request, settings.http_max_request_length)
 
-                # read until we hit the end of the headers
-                self.read_delimiter("\r\n", self.handle_request, settings.http_max_request_length)
+            return
 
-                return
-
-            # clear the events so the server inits the shutdown sequence
-            self.clear_events()
+        # clear the events so the server inits the shutdown sequence
+        self.clear_events()
 
     # ------------------------------------------------------------------------------------------------------------------
 
