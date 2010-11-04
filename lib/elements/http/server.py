@@ -1118,7 +1118,7 @@ class HttpRequest (Client):
 
                     if name != "SET_COOKIE":
                         # header assignment
-                        self.in_headers[name] = value
+                        self.in_headers[name] = value.strip()
 
                         continue
 
