@@ -27,7 +27,7 @@ def fetch_all (cursor):
     @return (list) A list of dicts which represent each record.
     """
 
-    if cursor.rowcount == 0:
+    if cursor.rowcount == 0 or not cursor.description:
         return None
 
     fields  = [field[0] for field in cursor.description]
@@ -50,7 +50,7 @@ def fetch_many (cursor, count):
     @return (list) A list of dicts which represent each record.
     """
 
-    if cursor.rowcount == 0:
+    if cursor.rowcount == 0 or not cursor.description:
         return None
 
     fields  = [field[0] for field in cursor.description]
@@ -72,7 +72,7 @@ def fetch_one (cursor):
     @return (dict) A single dict representing a database record.
     """
 
-    if cursor.rowcount == 0:
+    if cursor.rowcount == 0 or not cursor.description:
         return None
 
     return dict(zip([field[0] for field in cursor.description], cursor.fetchone()))
