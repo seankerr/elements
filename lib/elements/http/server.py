@@ -1567,6 +1567,30 @@ class RoutingHttpServer (HttpServer):
 
         HttpServer.__init__(self, **kwargs)
 
+        self._routes = routes
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new RoutingHttpClient instance.
+
+        @param client_socket  (socket) The client socket.
+        @param client_address (tuple)  A two-part tuple containing the client ip and port.
+        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
+                                       made a connection.
+        """
+
+        self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_init (self):
+        """
+        This callback will be executed during the start of the process immediately before the processing loop starts.
+        """
+
+        routes       = self._routes
         self._routes = {}
 
         if type(routes) != dict:
@@ -1648,17 +1672,3 @@ class RoutingHttpServer (HttpServer):
 
             else:
                 raise ServerException("Route details must be a tuple or list for route '%s'" % script_name)
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_client (self, client_socket, client_address, server_address):
-        """
-        Register a new RoutingHttpClient instance.
-
-        @param client_socket  (socket) The client socket.
-        @param client_address (tuple)  A two-part tuple containing the client ip and port.
-        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
-                                       made a connection.
-        """
-
-        self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
