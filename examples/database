@@ -37,10 +37,10 @@ try:
     # grab records
     cursor.execute("SELECT * FROM test_table")
 
-    print database.fetchone(cursor)
-    print database.fetchone(cursor)
-    print database.fetchone(cursor)
-    print database.fetchone(cursor)
+    print database.fetch_one(cursor)
+    print database.fetch_one(cursor)
+    print database.fetch_one(cursor)
+    print database.fetch_one(cursor)
 
 finally:
     if dbconn:
