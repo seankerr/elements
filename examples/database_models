@@ -12,6 +12,7 @@ import sys
 
 sys.path.append(os.path.abspath("../lib"))
 
+from elements.model          import database
 from elements.model.database import DatabaseModel
 from elements.model.model    import Email
 from elements.model.model    import Int
@@ -30,6 +31,9 @@ class ExampleDBModel (DatabaseModel):
 
     model = ExampleModel
     table = "example"
+
+# initialize database
+database.init()
 
 # create a new example model instance
 model          = ExampleDBModel()
