@@ -91,7 +91,19 @@ def get_connection (name="default"):
     if name not in settings.databases:
         raise DatabaseModelException("Non-existent database connection pool name %s" % name)
 
-    return settings.databases[name]["instance"].connection()
+    while True:
+        try:
+            # we open a temporary cursor to verify the connection status, if it raises an exception then the connection
+            # has been closed and we have to try again
+            dbconn = settings.databases[name]["instance"].connection()
+            cursor = dbconn.cursor()
+
+            cursor.close()
+
+            return dbconn
+
+        except Exception, e:
+            print "Cannot open a database connection: %s" % str(e)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
