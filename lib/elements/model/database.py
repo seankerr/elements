@@ -110,10 +110,10 @@ def get_connection (name="default"):
 def init ():
     """
     Initialize database connection pools.
-
-    Note: This will be called automatically when a DatabaseModel sub-class is present. Otherwise this must be called once at
-          application startup.
     """
+
+    if DatabaseModel.__POOL_INIT__:
+        return
 
     try:
         for name, data in settings.databases.items():
@@ -139,11 +139,6 @@ def init ():
 # ----------------------------------------------------------------------------------------------------------------------
 
 class DatabaseModelMetaclass (type):
-
-    # indicates whether or not the pool has been initialized
-    __POOL_INIT = False
-
-    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__ (cls, name, bases, members):
         """
@@ -171,6 +166,7 @@ class DatabaseModelMetaclass (type):
         cls.Meta              = new.classobj("Meta", (object,), { "connection": None })
         cls.Meta.columns      = []
         cls.Meta.model        = cls.model
+        cls.Meta.model_init   = False
         cls.Meta.foreign_keys = {}
         cls.Meta.primary_key  = cls.primary_key
         cls.Meta.table        = cls.table
@@ -192,12 +188,6 @@ class DatabaseModelMetaclass (type):
 
             del cls.foreign_keys
 
-        # check database pool
-        if not DatabaseModelMetaclass.__POOL_INIT:
-            init()
-
-            DatabaseModelMetaclass.__POOL_INIT = True
-
         if hasattr(cls, "database"):
             if cls.database not in settings.databases:
                 raise DatabaseModelException("%s uses nonexistent database %s" % (name, cls.database))
@@ -212,8 +202,6 @@ class DatabaseModelMetaclass (type):
 
             cls.Meta.database = "default"
 
-        cls.Meta.db = settings.databases[cls.Meta.database]["instance"]
-
         # check primary key
         if type(cls.Meta.primary_key) != str:
             raise DatabaseModelException("%s has an invalid primary key" % name)
@@ -225,29 +213,46 @@ class DatabaseModelMetaclass (type):
         if not isinstance(cls.Meta.model.Meta.fields[cls.Meta.primary_key], Int):
             raise DatabaseModelException("%s primary key field '%s' is not an integer field" % (name,
                                                                                                 cls.Meta.primary_key))
-        # get column details
+
+        return type.__init__(cls, name, bases, members)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    @staticmethod
+    def init_model (meta):
+        """
+        Initialize the column list for this model.
+
+        @param meta (object) The meta object containing information about the model.
+        """
+
+        if meta.model_init:
+            return
+
+        meta.db    = settings.databases[meta.database]["instance"]
         connection = None
 
         try:
             # get column details
-            connection = cls.Meta.db.connection()
+            connection = meta.db.connection()
             cursor     = connection.cursor()
 
-            cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % cls.Meta.table)
+            cursor.execute("SELECT * FROM \"%s\" LIMIT 1" % meta.table)
 
-            [cls.Meta.columns.append(column[0]) for column in cursor.description]
+            [meta.columns.append(column[0]) for column in cursor.description]
 
         finally:
+            meta.model_init = True
+
             if connection:
                 cursor.close()
                 connection.close()
-
-        return type.__init__(cls, name, bases, members)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 class DatabaseModel:
 
+    __POOL_INIT__ = False
     __metaclass__ = DatabaseModelMetaclass
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -364,6 +369,9 @@ class DatabaseModel:
 
         if meta.primary_key not in values:
             raise DatabaseModelException("This DatabaseModel instance does not represent an active database record")
+
+        if not meta.model_init:
+            DatabaseModelMetaclass.init_model(meta)
 
         try:
             if connection:
@@ -494,6 +502,9 @@ class DatabaseModel:
 
         close = True
         meta  = self.Meta
+
+        if not meta.model_init:
+            DatabaseModelMetaclass.init_model(meta)
 
         try:
             if connection:
@@ -789,6 +800,9 @@ class DatabaseModelQuery:
 
             else:
                 connection = settings.databases[meta.database]["instance"].connection()
+
+            if not meta.model_init:
+                DatabaseModelMetaclass.init_model(meta)
 
             cursor = connection.cursor()
             cursor.execute(query, self._values)
