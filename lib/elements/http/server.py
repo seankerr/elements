@@ -1478,7 +1478,7 @@ class HttpServer (Server):
         """
 
         # initialize databases
-        if hasattr(settings.databases):
+        if hasattr(settings, "databases"):
             from elements.model import database
 
             database.init()
