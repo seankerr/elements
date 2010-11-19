@@ -1472,6 +1472,19 @@ class HttpServer (Server):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def handle_init (self):
+        """
+        This callback will be executed during the start of the process immediately before the processing loop starts.
+        """
+
+        # initialize databases
+        if hasattr(settings.databases):
+            from elements.model import database
+
+            database.init()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def register_error_action (self, response_code, action, args=dict()):
         """
         Register a custom error action.
@@ -1590,6 +1603,9 @@ class RoutingHttpServer (HttpServer):
         This callback will be executed during the start of the process immediately before the processing loop starts.
         """
 
+        HttpServer.handle_init(self)
+
+        # initialize routes
         routes       = self._routes
         self._routes = {}
 
