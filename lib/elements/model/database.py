@@ -443,6 +443,9 @@ class DatabaseModel:
         close = True
         meta  = cls.Meta
 
+        if not meta.model_init:
+            DatabaseModelMetaclass.init_model(meta)
+
         try:
             if connection:
                 close = False
