@@ -1477,6 +1477,8 @@ class HttpServer (Server):
         This callback will be executed during the start of the process immediately before the processing loop starts.
         """
 
+        Server.handle_init(self)
+
         # initialize databases
         if hasattr(settings, "databases"):
             from elements.model import database
