@@ -76,6 +76,7 @@ class HttpClient (Client):
         self._orig_write              = self.write          # original write method
         self._request_count           = 0                   # count of served requests (only useful if persistence is
                                                             # enabled)
+        self.session                  = None                # current session
 
         # files variable must exist because it's access in handle_shutdown(), and handle_shutdown() is always called,
         # even in the event that a timeout occurred before a request could physically be handled
@@ -400,7 +401,7 @@ class HttpClient (Client):
         """
 
         self.__files              = []
-        self._is_headers_flushed  = False
+        self._is_headers_written  = False
         self._multipart_file      = None
         self._persistence_type    = None
         self._request_count      += 1
@@ -409,6 +410,7 @@ class HttpClient (Client):
         self.files                = None
         self.flush                = self._orig_flush
         self.in_cookies           = {}
+        self.in_headers           = {}
         self.out_cookies          = {}
         self.out_headers          = {}
         self.read_delimiter       = self._orig_read_delimiter
@@ -1015,7 +1017,7 @@ class HttpRequest (Client):
         @param data (str) The chunk length.
         """
 
-        length = int(data.strip().split(";")[0], 16)
+        length = int(data.strip().split(";", 1)[0], 16)
 
         if length > 0:
             # read until we get the entire chunk (add 2 bytes for CRLF)
