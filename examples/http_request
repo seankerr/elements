@@ -12,8 +12,8 @@ import sys
 
 sys.path.append(os.path.abspath("../lib"))
 
-from elements.async.server    import Server
-from elements.async.impl.http import HttpRequest
+from elements.async.server import Server
+from elements.http.server  import HttpRequest
 
 # ----------------------------------------------------------------------------------------------------------------------
 
