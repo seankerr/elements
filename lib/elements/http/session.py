@@ -338,9 +338,7 @@ class MemcacheSession (Session):
         @param status (bool) Indicates that the session is authenticated.
         """
 
-        if status in (True, False):
-            self._data["__is_authenticated__"] = status
+        if status not in (True, False):
+            raise ServerException("Invalid authenticated status")
 
-            return True
-
-        raise ServerException("Invalid authenticated status")
+        self._data["__is_authenticated__"] = status
