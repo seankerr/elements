@@ -222,7 +222,7 @@ class HttpClient (Client):
             # parse cookies
             if "HTTP_COOKIE" in in_headers:
                 for cookie in in_headers["HTTP_COOKIE"].split(";"):
-                    cookie = cookie.rstrip().split("=", 1)
+                    cookie = cookie.strip().split("=", 1)
 
                     in_cookies[cookie[0]] = cookie[1]
 
