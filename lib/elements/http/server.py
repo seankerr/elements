@@ -177,7 +177,7 @@ class HttpClient (Client):
 
             except:
                 # length required
-                self.raise_error(response_code.HTTP_411)
+                self.raise_response(response_code.HTTP_411)
 
                 return
 
@@ -235,7 +235,7 @@ class HttpClient (Client):
 
         except:
             # bad request
-            self.raise_error(response_code.HTTP_400)
+            self.raise_response(response_code.HTTP_400)
 
             return
 
@@ -258,7 +258,7 @@ class HttpClient (Client):
         """
 
         # bad request
-        self.raise_error(response_code.HTTP_400)
+        self.raise_response(response_code.HTTP_400)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -362,7 +362,7 @@ class HttpClient (Client):
 
         except:
             # bad request
-            self.raise_error(response_code.HTTP_400)
+            self.raise_response(response_code.HTTP_400)
 
         # read until we hit the boundary
         self.read_delimiter(self._multipart_boundary, self.handle_multipart_post_boundary)
@@ -389,7 +389,7 @@ class HttpClient (Client):
             return
 
         # bad request
-        self.raise_error(response_code.HTTP_400)
+        self.raise_response(response_code.HTTP_400)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -430,7 +430,7 @@ class HttpClient (Client):
 
             except:
                 # bad request
-                self.raise_error(response_code.HTTP_400)
+                self.raise_response(response_code.HTTP_400)
 
                 return
 
@@ -440,13 +440,13 @@ class HttpClient (Client):
 
         if method not in ("CONNECT", "DELETE", "GET", "HEAD", "OPTIONS", "POST", "PUT", "TRACE"):
             # method not allowed
-            self.raise_error(response_code.HTTP_405)
+            self.raise_response(response_code.HTTP_405)
 
             return
 
         if protocol not in ("HTTP/1.0", "HTTP/1.1"):
             # http protocol not supported
-            self.raise_error(response_code.HTTP_505)
+            self.raise_response(response_code.HTTP_505)
 
             return
 
@@ -714,21 +714,21 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def raise_error (self, response_code):
+    def raise_response (self, response_code):
         """
-        Display an error page for the response code.
+        Display a page for the response code.
 
         @param response_code (str) The response code.
         """
 
         try:
-            action = self._server._error_actions[response_code]
+            action = self._server._response_actions[response_code]
 
         except:
             pos = response_code.find(" ")
 
             if pos > -1:
-                raise ClientException("Missing action for error: %s" % response_code[:pos])
+                raise ClientException("Missing action for response code: %s" % response_code[:pos])
 
             else:
                 raise ClientException("Invalid response code: %s" % response_code)
@@ -1402,39 +1402,39 @@ class HttpServer (Server):
 
         Server.__init__(self, *args, **kwargs)
 
-        self._error_actions = {}
+        self._response_actions = {}
 
         # error actions
-        self.register_error_action(response_code.HTTP_400, HttpAction)
-        self.register_error_action(response_code.HTTP_402, HttpAction)
-        self.register_error_action(response_code.HTTP_403, HttpAction)
-        self.register_error_action(response_code.HTTP_404, HttpAction)
-        self.register_error_action(response_code.HTTP_405, HttpAction)
-        self.register_error_action(response_code.HTTP_406, HttpAction)
-        self.register_error_action(response_code.HTTP_407, HttpAction)
-        self.register_error_action(response_code.HTTP_408, HttpAction)
-        self.register_error_action(response_code.HTTP_409, HttpAction)
-        self.register_error_action(response_code.HTTP_410, HttpAction)
-        self.register_error_action(response_code.HTTP_411, HttpAction)
-        self.register_error_action(response_code.HTTP_412, HttpAction)
-        self.register_error_action(response_code.HTTP_413, HttpAction)
-        self.register_error_action(response_code.HTTP_414, HttpAction)
-        self.register_error_action(response_code.HTTP_415, HttpAction)
-        self.register_error_action(response_code.HTTP_416, HttpAction)
-        self.register_error_action(response_code.HTTP_417, HttpAction)
-        self.register_error_action(response_code.HTTP_422, HttpAction)
-        self.register_error_action(response_code.HTTP_423, HttpAction)
-        self.register_error_action(response_code.HTTP_424, HttpAction)
-        self.register_error_action(response_code.HTTP_426, HttpAction)
-        self.register_error_action(response_code.HTTP_500, HttpAction)
-        self.register_error_action(response_code.HTTP_501, HttpAction)
-        self.register_error_action(response_code.HTTP_502, HttpAction)
-        self.register_error_action(response_code.HTTP_503, HttpAction)
-        self.register_error_action(response_code.HTTP_504, HttpAction)
-        self.register_error_action(response_code.HTTP_505, HttpAction)
-        self.register_error_action(response_code.HTTP_506, HttpAction)
-        self.register_error_action(response_code.HTTP_507, HttpAction)
-        self.register_error_action(response_code.HTTP_510, HttpAction)
+        self.register_response_action(response_code.HTTP_400, HttpAction)
+        self.register_response_action(response_code.HTTP_402, HttpAction)
+        self.register_response_action(response_code.HTTP_403, HttpAction)
+        self.register_response_action(response_code.HTTP_404, HttpAction)
+        self.register_response_action(response_code.HTTP_405, HttpAction)
+        self.register_response_action(response_code.HTTP_406, HttpAction)
+        self.register_response_action(response_code.HTTP_407, HttpAction)
+        self.register_response_action(response_code.HTTP_408, HttpAction)
+        self.register_response_action(response_code.HTTP_409, HttpAction)
+        self.register_response_action(response_code.HTTP_410, HttpAction)
+        self.register_response_action(response_code.HTTP_411, HttpAction)
+        self.register_response_action(response_code.HTTP_412, HttpAction)
+        self.register_response_action(response_code.HTTP_413, HttpAction)
+        self.register_response_action(response_code.HTTP_414, HttpAction)
+        self.register_response_action(response_code.HTTP_415, HttpAction)
+        self.register_response_action(response_code.HTTP_416, HttpAction)
+        self.register_response_action(response_code.HTTP_417, HttpAction)
+        self.register_response_action(response_code.HTTP_422, HttpAction)
+        self.register_response_action(response_code.HTTP_423, HttpAction)
+        self.register_response_action(response_code.HTTP_424, HttpAction)
+        self.register_response_action(response_code.HTTP_426, HttpAction)
+        self.register_response_action(response_code.HTTP_500, HttpAction)
+        self.register_response_action(response_code.HTTP_501, HttpAction)
+        self.register_response_action(response_code.HTTP_502, HttpAction)
+        self.register_response_action(response_code.HTTP_503, HttpAction)
+        self.register_response_action(response_code.HTTP_504, HttpAction)
+        self.register_response_action(response_code.HTTP_505, HttpAction)
+        self.register_response_action(response_code.HTTP_506, HttpAction)
+        self.register_response_action(response_code.HTTP_507, HttpAction)
+        self.register_response_action(response_code.HTTP_510, HttpAction)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1489,12 +1489,12 @@ class HttpServer (Server):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def register_error_action (self, response_code, action, args=dict()):
+    def register_response_action (self, response_code, action, args=dict()):
         """
-        Register a custom error action.
+        Register a custom response action.
 
         @param response_code (str)   The response code under which we're registering the action.
-        @param action        (class) The custom error action.
+        @param action        (class) The custom action class.
         @param args          (dict)  The action initialization arguments.
         """
 
@@ -1508,8 +1508,8 @@ class HttpServer (Server):
             raise ServerException("Invalid error action response code: %s" % response_code)
 
         try:
-            self._error_actions[response_code] = (None, action(self, title=title, response_code=code, **args),
-                                                  False)
+            self._response_actions[response_code] = (None, action(self, title=title, response_code=code, **args),
+                                                     False)
 
         except Exception, e:
             raise ServerException("Error action for response code %s failed to instantiate: %s" % (code, str(e)))
@@ -1525,7 +1525,7 @@ class RoutingHttpClient (HttpClient):
 
         route                      = self.in_headers["REQUEST_URI"].split(":", 1)
         pattern, action, is_secure = self._server._routes.get(route[0],
-                                                              self._server._error_actions[response_code.HTTP_404])
+                                                              self._server._response_actions[response_code.HTTP_404])
 
         if is_secure:
             if not self.session or not self.session.is_authenticated():
@@ -1549,7 +1549,7 @@ class RoutingHttpClient (HttpClient):
         # check for expected data
         if len(route) == 1:
             # route didn't contain data, so it's automatically invalidated (serve 404 as if the url doesn't exist)
-            pattern, action, is_secure = self._server._error_actions[response_code.HTTP_404]
+            pattern, action, is_secure = self._server._response_actions[response_code.HTTP_404]
 
             getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
 
@@ -1560,7 +1560,7 @@ class RoutingHttpClient (HttpClient):
 
         if not match:
             # data did not validate successfully (serve 404 as if the url doesn't exist)
-            pattern, action, is_secure = self._server._error_actions[response_code.HTTP_404]
+            pattern, action, is_secure = self._server._response_actions[response_code.HTTP_404]
 
             getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
 
