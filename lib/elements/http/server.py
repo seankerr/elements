@@ -1621,74 +1621,74 @@ class RoutingHttpServer (HttpServer):
             if type(script_name) != str:
                 raise ServerException("Invalid route")
 
-            if type(details) in (list, tuple):
-                if type(details[0]) == str:
-                    pattern       = details[0]
-                    action        = details[1]
-                    action_kwargs = dict()
+            if type(details) not in (list, tuple):
+                # invalid route details
+                raise ServerException("Route details must be a tuple or list for route '%s'" % script_name)
 
-                    if len(details) == 3:
-                        action_kwargs = details[2]
+            if type(details[0]) == str:
+                pattern       = details[0]
+                action        = details[1]
+                action_kwargs = dict()
 
-                else:
-                    pattern       = None
-                    action        = details[0]
-                    action_kwargs = dict()
-
-                    if len(details) == 2:
-                        action_kwargs = details[1]
-
-                try:
-                    if not issubclass(action, HttpAction):
-                        raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
-
-                except ServerException:
-                    raise
-
-                except Exception, e:
-                    raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
-
-                if not issubclass(action, SecureHttpAction):
-                    # this route does not require authentication
-                    is_secure = False
-
-                else:
-                    # this route requires authentication
-                    is_secure = True
-
-                if pattern:
-                    # this route requires a pattern
-                    if type(pattern) != str:
-                        raise ServerException("Regex pattern for route '%s' must be a string" % script_name)
-
-                    try:
-                        # take simplified group names and convert them to regex-style group names
-                        for match in re.findall("\((?P<name>[^:]+):(?P<pattern>.*?)(?<!\\\)\)", pattern, re.I):
-                            pattern = pattern.replace("(%s:%s)" % match, "(?P<%s>%s)" % match)
-
-                        pattern = re.compile(pattern)
-
-                    except Exception, e:
-                        raise ServerException("Regex pattern error for route '%s': %s" % (script_name, str(e)))
-
-                    try:
-                        self._routes[script_name] = (pattern, action(server=self, title="Method Not Supported",
-                                                                     response_code=response_code.HTTP_405,
-                                                                     **action_kwargs), is_secure)
-
-                    except Exception, e:
-                        raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name,
-                                                                                                   str(e)))
-
-                else:
-                    # no pattern for this route
-                    try:
-                        self._routes[script_name] = (None, action(server=self, title="Method Not Supported",
-                                                                  response_code=response_code.HTTP_405,
-                                                                 **action_kwargs), is_secure)
-
-                    except Exception, e:
-                        raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
+                if len(details) == 3:
+                    action_kwargs = details[2]
 
             else:
-                raise ServerException("Route details must be a tuple or list for route '%s'" % script_name)
+                pattern       = None
+                action        = details[0]
+                action_kwargs = dict()
+
+                if len(details) == 2:
+                    action_kwargs = details[1]
+
+            try:
+                if not issubclass(action, HttpAction):
+                    raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
+
+            except ServerException:
+                raise
+
+            except Exception, e:
+                raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
+
+            if not issubclass(action, SecureHttpAction):
+                # this route does not require authentication
+                is_secure = False
+
+            else:
+                # this route requires authentication
+                is_secure = True
+
+            if pattern:
+                # this route requires a pattern
+                if type(pattern) != str:
+                    raise ServerException("Regex pattern for route '%s' must be a string" % script_name)
+
+                try:
+                    # take simplified group names and convert them to regex-style group names
+                    for match in re.findall("\((?P<name>[^:]+):(?P<pattern>.*?)(?<!\\\)\)", pattern, re.I):
+                        pattern = pattern.replace("(%s:%s)" % match, "(?P<%s>%s)" % match)
+
+                    pattern = re.compile(pattern)
+
+                except Exception, e:
+                    raise ServerException("Regex pattern error for route '%s': %s" % (script_name, str(e)))
+
+                try:
+                    self._routes[script_name] = (pattern, action(server=self, title="Method Not Supported",
+                                                                 response_code=response_code.HTTP_405,
+                                                                 **action_kwargs), is_secure)
+
+                except Exception, e:
+                    raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name,
+                                                                                               str(e)))
+
+            else:
+                # no pattern for this route
+                try:
+                    self._routes[script_name] = (None, action(server=self, title="Method Not Supported",
+                                                              response_code=response_code.HTTP_405,
+                                                              **action_kwargs), is_secure)
+
+                except Exception, e:
+                    raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
