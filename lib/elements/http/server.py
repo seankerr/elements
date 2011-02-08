@@ -1516,6 +1516,184 @@ class HttpServer (Server):
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class RegexRoutingHttpClient (HttpClient):
+
+    def find_route (self, url, routes):
+        """
+        Find a matching route for the requested URL.
+
+        @param url    (str)   The next portion of the URL to match.
+        @param routes (tuple) The list of routes to check.
+        """
+
+        for route in routes:
+            match = route[0].match(url)
+
+            if match:
+                # update parameters with the matched group data
+                self.params.update(match.groupdict())
+
+                if type(route[1]) == tuple:
+                    # iterate sub-routes
+                    return self.find_route(url[len(match.group(0)):], route[1])
+
+                if route[2]:
+                    # this is a secure url
+                    if not self.session or not self.session.is_authenticated():
+                        # this route requires authentication
+                        self.redirect(settings.http_login_url)
+
+                        return
+
+                    if not route[1].check_credentials(self):
+                        # user doesn't have required credentials
+                        self.redirect(settings.http_credentials_url)
+
+                        return
+
+                # return matching action
+                return route[1]
+
+        # didn't find a match
+        return self._server._response_actions[response_code.HTTP_404][1]
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_dispatch (self):
+        """
+        This callback will be executed when the request has been parsed and needs dispatched to a handler.
+        """
+
+        action = self.find_route(self.in_headers["REQUEST_URI"], self._server._routes)
+
+        if action:
+            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class RegexRoutingHttpServer (HttpServer):
+
+    def __init__ (self, routes, **kwargs):
+        """
+        Create a new RegexRoutingHttpServer instance.
+
+        @param routes (list/tuple) A list or tuple of route mappings.
+        """
+
+        HttpServer.__init__(self, **kwargs)
+
+        self._routes = routes
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new RegexRoutingHttpClient instance.
+
+        @param client_socket  (socket) The client socket.
+        @param client_address (tuple)  A two-part tuple containing the client ip and port.
+        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
+                                       made a connection.
+        """
+
+        self.register_client(RegexRoutingHttpClient(client_socket, client_address, self, server_address))
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_init (self):
+        """
+        This callback will be executed during the start of the process immediately before the processing loop starts.
+        """
+
+        self._routes = self.parse_routes([], self._routes)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def parse_routes (self, parent_url_patterns, routes):
+        """
+        Parse regex routes.
+
+        @param parent_url_patterns (list)       The list of parent url patterns.
+        @param routes              (list/tuple) The list or tuple of route mappings.
+        """
+
+        compiled_routes = []
+
+        for route in routes:
+            if type(route) not in (list, tuple):
+                raise ServerException("Expected a list or tuple for routes beneath %s" % parent_url_patterns)
+
+            if len(route) not in (2, 3):
+                raise ServerException("Invalid number of route arguments")
+
+            if type(route[0]) != str:
+                raise ServerException("Expected a string pattern for route beneath %s" % parent_url_patterns)
+
+            # compile the route pattern
+            pattern      = route[0]
+            url_patterns = list(parent_url_patterns)
+
+            url_patterns.append(route[0])
+
+            try:
+                # take simplified group names and convert them to regex-style group names
+                for match in re.findall("\((?P<name>[^:]+):(?P<pattern>.*?)(?<!\\\)\)", route[0], re.I):
+                    pattern = pattern.replace("(%s:%s)" % match, "(?P<%s>%s)" % match)
+
+                regex = re.compile(pattern)
+
+            except Exception, e:
+                raise ServerException("Regex pattern error for route %s: %s" % (url_patterns, str(e)))
+
+            if type(route[1]) in (list, tuple):
+                # parse sub-routes
+                compiled_routes.append((regex, tuple([route for route in self.parse_routes(url_patterns, route[1])])))
+
+                continue
+
+            if type(route[1]) == str:
+                # the action is a string, so we'll try to load it as if it's module.ClassName format
+                fullpath, action = route[1].rsplit(".", 1)
+
+                try:
+                    # load the action class
+                    action = getattr(__import__(fullpath, globals(), locals(), [action], -1), action)
+
+                except Exception, e:
+                    raise ServerException("Failed to import action class '%s': %s" % (route[1], str(e)))
+
+            else:
+                action = route[1]
+
+            action_kwargs = {}
+
+            if len(route) == 3:
+                # init arguments have been provided
+                action_kwargs = route[2]
+
+            if not issubclass(action, HttpAction):
+                raise ServerException("Action class '%s' must be a sub-class of HttpAction" % route[1])
+
+            if not issubclass(action, SecureHttpAction):
+                # this route does not require authentication
+                is_secure = False
+
+            else:
+                # this route requires authentication
+                is_secure = True
+
+            try:
+                compiled_routes.append((regex, action(server=self, title="Method Not Supported",
+                                                      response_code=response_code.HTTP_405,
+                                                      **action_kwargs), is_secure))
+
+            except Exception, e:
+                raise ServerException("Action class '%s' failed to instantiate: %s" % (route[1], str(e)))
+
+        return tuple(compiled_routes)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class RoutingHttpClient (HttpClient):
 
     def handle_dispatch (self):
@@ -1641,14 +1819,7 @@ class RoutingHttpServer (HttpServer):
                 if len(details) == 2:
                     action_kwargs = details[1]
 
-            try:
-                if not issubclass(action, HttpAction):
-                    raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
-
-            except ServerException:
-                raise
-
-            except Exception, e:
+            if not issubclass(action, HttpAction):
                 raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
 
             if not issubclass(action, SecureHttpAction):
