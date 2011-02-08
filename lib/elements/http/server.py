@@ -734,7 +734,7 @@ class HttpClient (Client):
                 raise ClientException("Invalid response code: %s" % response_code)
 
         # execute the action here so any exceptions can be caught by the server
-        getattr(action[1], self.in_headers.get("REQUEST_METHOD", "GET").lower())(self)
+        getattr(action, self.in_headers.get("REQUEST_METHOD", "GET").lower())(self)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1508,8 +1508,7 @@ class HttpServer (Server):
             raise ServerException("Invalid error action response code: %s" % response_code)
 
         try:
-            self._response_actions[response_code] = (None, action(self, title=title, response_code=code, **args),
-                                                     False)
+            self._response_actions[response_code] = action(self, title=title, response_code=code, **args)
 
         except Exception, e:
             raise ServerException("Error action for response code %s failed to instantiate: %s" % (code, str(e)))
@@ -1555,7 +1554,7 @@ class RegexRoutingHttpClient (HttpClient):
                 return route[1]
 
         # didn't find a match
-        return self._server._response_actions[response_code.HTTP_404][1]
+        return self._server._response_actions[response_code.HTTP_404]
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1701,9 +1700,13 @@ class RoutingHttpClient (HttpClient):
         This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
-        route                      = self.in_headers["REQUEST_URI"].split(":", 1)
-        pattern, action, is_secure = self._server._routes.get(route[0],
-                                                              self._server._response_actions[response_code.HTTP_404])
+        route = self.in_headers["REQUEST_URI"].split(":", 1)
+
+        try:
+            pattern, action, is_secure = self._server._routes[route[0]]
+
+        except:
+            pattern, action, is_secure = None, self._server._response_actions[response_code.HTTP_404], False
 
         if is_secure:
             if not self.session or not self.session.is_authenticated():
@@ -1727,9 +1730,8 @@ class RoutingHttpClient (HttpClient):
         # check for expected data
         if len(route) == 1:
             # route didn't contain data, so it's automatically invalidated (serve 404 as if the url doesn't exist)
-            pattern, action, is_secure = self._server._response_actions[response_code.HTTP_404]
-
-            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+            getattr(self._server._response_actions[response_code.HTTP_404],
+                    self.in_headers["REQUEST_METHOD"].lower())(self)
 
             return
 
@@ -1738,9 +1740,8 @@ class RoutingHttpClient (HttpClient):
 
         if not match:
             # data did not validate successfully (serve 404 as if the url doesn't exist)
-            pattern, action, is_secure = self._server._response_actions[response_code.HTTP_404]
-
-            getattr(action, self.in_headers["REQUEST_METHOD"].lower())(self)
+            getattr(self._server._response_actions[response_code.HTTP_404],
+                    self.in_headers["REQUEST_METHOD"].lower())(self)
 
             return
 
