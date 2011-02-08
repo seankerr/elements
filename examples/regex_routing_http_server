@@ -1,0 +1,51 @@
+#!/usr/bin/env python
+#
+# This file is part of Elements.
+# Copyright (c) 2010 Sean Kerr. All rights reserved.
+#
+# The full license is available in the LICENSE file that was distributed with this source code.
+#
+# Author: Sean Kerr <sean@code-box.org>
+
+import os
+import sys
+
+sys.path.append(os.path.abspath("../lib"))
+
+from elements.core        import elements
+from elements.http.action import HttpAction
+from elements.http.server import RegexRoutingHttpServer
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class TestAction (HttpAction):
+
+    def get (self, client):
+
+        client.compose_headers()
+        client.write("GET served on %s" % client.in_headers["REQUEST_URI"])
+        client.write("<br>Params: ")
+        client.write(str(client.params))
+        client.flush()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+# start the server
+RegexRoutingHttpServer(hosts=[("0.0.0.0", 8080)],
+                       routes=[
+                           [r"^/", TestAction],
+                       ]).start()
+
+"""
+these are other routing methods, but for simplicities sake they're left out of the example server because
+they would require several other files for them to work
+
+
+this example here is good when you don't want to import an action class in the same file where the route is defined
+[r"^/path", "some.full.module.path.to.an.action.Class"]
+
+action classes can also take arguments as a dictionary, but make sure you override the constructor in order to
+receive them
+[r"^/path", "some.Class", {"arg1": "just", "arg2": "a", "arg3": "test"}]
+
+"""
