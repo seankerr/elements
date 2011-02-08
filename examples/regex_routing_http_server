@@ -12,7 +12,6 @@ import sys
 
 sys.path.append(os.path.abspath("../lib"))
 
-from elements.core        import elements
 from elements.http.action import HttpAction
 from elements.http.server import RegexRoutingHttpServer
 
@@ -47,5 +46,9 @@ this example here is good when you don't want to import an action class in the s
 action classes can also take arguments as a dictionary, but make sure you override the constructor in order to
 receive them
 [r"^/path", "some.Class", {"arg1": "just", "arg2": "a", "arg3": "test"}]
+
+the elements.core.elements module contains an include() function that can be used to include other module attributes
+as sub-routes. this allows for modules to be reusable.
+[r"^/path", elements.include("mymodule.routes_attribute")]
 
 """
