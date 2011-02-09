@@ -1604,6 +1604,8 @@ class RegexRoutingHttpServer (HttpServer):
         This callback will be executed during the start of the process immediately before the processing loop starts.
         """
 
+        HttpServer.handle_init(self)
+
         self._routes = self.parse_routes([], self._routes)
 
     # ------------------------------------------------------------------------------------------------------------------
