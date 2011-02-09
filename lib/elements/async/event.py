@@ -26,7 +26,7 @@ class EventManager:
 
     def modify (self, fileno, events):
         """
-        Modify the event list that a file descriptor.
+        Modify the event list for a file descriptor.
 
         @param fileno (int) The file descriptor.
         @param events (int) The events.
@@ -91,7 +91,7 @@ class KQueueEventManager (EventManager):
 
     def modify (self, fileno, events):
         """
-        Modify the event list that a file descriptor.
+        Modify the event list for a file descriptor.
 
         @param fileno (int) The file descriptor.
         @param events (int) The events.
@@ -181,7 +181,7 @@ class PollEventManager (EventManager):
 
     def modify (self, fileno, events):
         """
-        Modify the event list that a file descriptor.
+        Modify the event list for a file descriptor.
 
         @param fileno (int) The file descriptor.
         @param events (int) The events.
@@ -267,7 +267,7 @@ class SelectEventManager (EventManager):
 
     def modify (self, fileno, events):
         """
-        Modify the event list that a file descriptor.
+        Modify the event list for a file descriptor.
 
         @param fileno (int) The file descriptor.
         @param events (int) The events.
