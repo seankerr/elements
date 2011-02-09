@@ -86,10 +86,10 @@ class Server:
 
         # choose event manager
         if hasattr(select, "epoll") and (event_manager is None or event_manager == "epoll"):
-            self._event_manager = EPollEventManager(self)
+            self._event_manager = EPollEventManager
 
         elif hasattr(select, "kqueue") and (event_manager is None or event_manager == "kqueue"):
-            self._event_manager = KQueueEventManager(self)
+            self._event_manager = KQueueEventManager
             self._worker_count  = 0
 
             if worker_count > 0:
@@ -97,28 +97,13 @@ class Server:
                       "so workers have been disabled. If you want that ability, you must use the Select event manager."
 
         elif hasattr(select, "poll") and (event_manager is None or event_manager == "poll"):
-            self._event_manager = PollEventManager(self)
+            self._event_manager = PollEventManager
 
         elif hasattr(select, "select") and (event_manager is None or event_manager == "select"):
-            self._event_manager = SelectEventManager(self)
+            self._event_manager = SelectEventManager
 
         else:
             raise ServerException("Could not find a suitable event manager for your platform")
-
-        # initialize the event manager methods and events
-        self._event_manager_modify     = self._event_manager.modify
-        self._event_manager_poll       = self._event_manager.poll
-        self._event_manager_register   = self._event_manager.register
-        self._event_manager_unregister = self._event_manager.unregister
-
-        # update this server with the proper events
-        self.EVENT_READ   = self._event_manager.EVENT_READ
-        self.EVENT_WRITE  = self._event_manager.EVENT_WRITE
-
-        # update the client module with the proper events
-        client.EVENT_LINGER = self._event_manager.EVENT_LINGER
-        client.EVENT_READ   = self._event_manager.EVENT_READ
-        client.EVENT_WRITE  = self._event_manager.EVENT_WRITE
 
         # change group
         if group:
@@ -174,6 +159,24 @@ class Server:
 
             if os.fork():
                 os._exit(0)
+
+            self.handle_post_daemonize()
+
+        # initialize the event manager methods and events
+        self._event_manager            = self._event_manager(self)
+        self._event_manager_modify     = self._event_manager.modify
+        self._event_manager_poll       = self._event_manager.poll
+        self._event_manager_register   = self._event_manager.register
+        self._event_manager_unregister = self._event_manager.unregister
+
+        # update this server with the proper events
+        self.EVENT_READ   = self._event_manager.EVENT_READ
+        self.EVENT_WRITE  = self._event_manager.EVENT_WRITE
+
+        # update the client module with the proper events
+        client.EVENT_LINGER = self._event_manager.EVENT_LINGER
+        client.EVENT_READ   = self._event_manager.EVENT_READ
+        client.EVENT_WRITE  = self._event_manager.EVENT_WRITE
 
         # add all hosts
         if hosts:
@@ -294,6 +297,15 @@ class Server:
         """
 
         return []
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_post_daemonize (self):
+        """
+        This callback will be executed after the parent process daemonizes.
+        """
+
+        pass
 
     # ------------------------------------------------------------------------------------------------------------------
 
