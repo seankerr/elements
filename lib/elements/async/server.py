@@ -33,7 +33,7 @@ from elements.core.exception import ServerException
 class Server:
 
     def __init__ (self, hosts=None, daemonize=False, user=None, group=None, umask=None, chroot=None, long_running=False,
-                  loop_interval=1, timeout=None, timeout_interval=10, worker_count=0, channel_count=1,
+                  loop_interval=1, timeout=None, timeout_interval=10, worker_count=0, channel_count=0,
                   event_manager=None, print_settings=True):
         """
         Create a new Server instance.
@@ -79,10 +79,6 @@ class Server:
         self._umask                    = umask            # process umask
         self._user                     = user             # process user
         self._worker_count             = worker_count     # count of worker processes
-
-        # channel count must be at least 1 since channels are used to determine child status
-        if self._channel_count < 1:
-            self._channel_count = 1
 
         # choose event manager
         if hasattr(select, "epoll") and (event_manager is None or event_manager == "epoll"):
