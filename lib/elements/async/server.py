@@ -57,6 +57,7 @@ class Server:
 
         self._channels                 = {}               # worker channels
         self._channel_count            = channel_count    # count of channels to be created
+        self._children                 = []               # list of child process ids
         self._chroot                   = chroot           # process chroot
         self._clients                  = {}               # all active clients
         self._event_manager            = None             # event manager instance
@@ -314,16 +315,29 @@ class Server:
 
             return
 
-        # allow a worker process to exit
-        pid, status = os.wait()
+        process = None
 
-        if pid in self._channels:
-            for channel in self._channels[pid]:
-                self.unregister_client(channel)
+        while True:
+            try:
+                if not process:
+                    process = os.wait()
 
-            del self._channels[pid]
+                if process[0] in self._children:
+                    self._children.remove(process[0])
 
-        self.handle_worker_exited(pid, status)
+                if process[0] in self._channels:
+                    for channel in self._channels[process[0]]:
+                        self.unregister_client(channel)
+
+                    del self._channels[process[0]]
+
+                break
+
+            except:
+                pass
+
+        # notify the server that we lost a child
+        self.handle_worker_exited(*process)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -368,7 +382,8 @@ class Server:
         @param status (int) The exit status.
         """
 
-        pass
+        if not self._is_shutting_down:
+            self.spawn_worker()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -459,16 +474,9 @@ class Server:
             return
 
         # wait for all worker processes to exit
-        for pid in self._channels:
+        for pid in self._children:
             try:
                 os.kill(pid, signal.SIGINT)
-
-            except:
-                pass
-
-        for pid in self._channels:
-            try:
-                self.handle_worker_exited(*os.wait())
 
             except:
                 pass
@@ -504,6 +512,7 @@ class Server:
 
         if pid:
             # initialize and register worker channels
+            self._children.append(pid)
             self.__register_channels(self.handle_channels(pid, parent_sockets))
 
             return
