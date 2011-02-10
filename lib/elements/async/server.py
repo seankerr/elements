@@ -631,8 +631,10 @@ class Server:
         unregister_func        = self._event_manager_unregister
         unregister_client_func = self.unregister_client
 
-        # post start initialization
-        self.handle_post_start()
+        if not self._is_parent or self._worker_count == 0:
+            # post start initialization
+            print "post start"
+            self.handle_post_start()
 
         # loop until the server is going to shutdown
         while not is_shutting_down:
