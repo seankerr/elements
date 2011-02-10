@@ -1406,6 +1406,7 @@ class HttpServer (Server):
 
         # error actions
         self.register_response_action(response_code.HTTP_400, HttpAction)
+        self.register_response_action(response_code.HTTP_401, HttpAction)
         self.register_response_action(response_code.HTTP_402, HttpAction)
         self.register_response_action(response_code.HTTP_403, HttpAction)
         self.register_response_action(response_code.HTTP_404, HttpAction)
@@ -1541,10 +1542,7 @@ class RegexRoutingHttpClient (HttpClient):
 
                 if route[2]:
                     # this is a secure url
-                    if not self.session or not self.session.is_authenticated():
-                        # this route requires authentication
-                        self.redirect(settings.http_login_url)
-
+                    if not route[1].check_auth(self):
                         return
 
                     if not route[1].check_credentials(self):
@@ -1703,9 +1701,7 @@ class RoutingHttpClient (HttpClient):
             pattern, action, is_secure = None, self._server._response_actions[response_code.HTTP_404], False
 
         if is_secure:
-            if not self.session or not self.session.is_authenticated():
-                # this route requires authentication
-                self.redirect(settings.http_login_url)
+            if not action.check_auth(self):
 
                 return
 
