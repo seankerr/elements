@@ -1474,12 +1474,15 @@ class HttpServer (Server):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_init (self):
+    def handle_post_start (self):
         """
-        This callback will be executed during the start of the process immediately before the processing loop starts.
+        This callback will be executed after the call to start().
+
+        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+              processes are provided.
         """
 
-        Server.handle_init(self)
+        Server.handle_post_start(self)
 
         # initialize databases
         if hasattr(settings, "databases"):
@@ -1599,12 +1602,15 @@ class RegexRoutingHttpServer (HttpServer):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_init (self):
+    def handle_post_start (self):
         """
-        This callback will be executed during the start of the process immediately before the processing loop starts.
+        This callback will be executed after the call to start().
+
+        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+              processes are provided.
         """
 
-        HttpServer.handle_init(self)
+        HttpServer.handle_post_start(self)
 
         self._routes = self.parse_routes([], self._routes)
 
@@ -1783,12 +1789,15 @@ class RoutingHttpServer (HttpServer):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_init (self):
+    def handle_post_start (self):
         """
-        This callback will be executed during the start of the process immediately before the processing loop starts.
+        This callback will be executed after the call to start().
+
+        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+              processes are provided.
         """
 
-        HttpServer.handle_init(self)
+        HttpServer.handle_post_start(self)
 
         # initialize routes
         routes       = self._routes
