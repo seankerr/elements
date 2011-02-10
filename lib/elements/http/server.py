@@ -1474,7 +1474,7 @@ class HttpServer (Server):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def handle_post_start (self):
+    def handle_init (self):
         """
         This callback will be executed after the call to start().
 
@@ -1482,7 +1482,7 @@ class HttpServer (Server):
               processes are provided.
         """
 
-        Server.handle_post_start(self)
+        Server.handle_init(self)
 
         # initialize databases
         if hasattr(settings, "databases"):
