@@ -1584,7 +1584,7 @@ class RegexRoutingHttpServer (HttpServer):
 
         HttpServer.__init__(self, **kwargs)
 
-        self._routes = routes
+        self._routes = self.parse_routes([], routes)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1599,20 +1599,6 @@ class RegexRoutingHttpServer (HttpServer):
         """
 
         self.register_client(RegexRoutingHttpClient(client_socket, client_address, self, server_address))
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_post_start (self):
-        """
-        This callback will be executed after the call to start().
-
-        Note: This will be called on all children processes. This will also be called on the parent process if no worker
-              processes are provided.
-        """
-
-        HttpServer.handle_post_start(self)
-
-        self._routes = self.parse_routes([], self._routes)
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1771,36 +1757,7 @@ class RoutingHttpServer (HttpServer):
 
         HttpServer.__init__(self, **kwargs)
 
-        self._routes = routes
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_client (self, client_socket, client_address, server_address):
-        """
-        Register a new RoutingHttpClient instance.
-
-        @param client_socket  (socket) The client socket.
-        @param client_address (tuple)  A two-part tuple containing the client ip and port.
-        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
-                                       made a connection.
-        """
-
-        self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_post_start (self):
-        """
-        This callback will be executed after the call to start().
-
-        Note: This will be called on all children processes. This will also be called on the parent process if no worker
-              processes are provided.
-        """
-
-        HttpServer.handle_post_start(self)
-
         # initialize routes
-        routes       = self._routes
         self._routes = {}
 
         if type(routes) != dict:
@@ -1875,3 +1832,18 @@ class RoutingHttpServer (HttpServer):
 
                 except Exception, e:
                     raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
+
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_client (self, client_socket, client_address, server_address):
+        """
+        Register a new RoutingHttpClient instance.
+
+        @param client_socket  (socket) The client socket.
+        @param client_address (tuple)  A two-part tuple containing the client ip and port.
+        @param server_address (tuple)  A two-part tuple containing the server ip and port to which the client has
+                                       made a connection.
+        """
+
+        self.register_client(RoutingHttpClient(client_socket, client_address, self, server_address))
