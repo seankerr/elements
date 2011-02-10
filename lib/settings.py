@@ -11,7 +11,6 @@
 
 from elements.http.session import MemcacheSession
 
-http_credentials_url    = "/"
 http_gmt_offset         = "-5"
 http_login_url          = "/login"
 http_max_headers_length = 10000
