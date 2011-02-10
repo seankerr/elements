@@ -7,6 +7,8 @@
 
 import os
 
+import settings
+
 from elements.http import response_code
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -38,7 +40,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -53,7 +56,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -68,7 +72,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -83,7 +88,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -98,7 +104,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -113,7 +120,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -128,7 +136,8 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -143,12 +152,31 @@ class HttpAction:
         client.response_code = self.__response_code
 
         client.compose_headers()
-        client.write("<h1>%s</h1>" % self.__title)
+        client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
+                     (self.__title, self.__title))
         client.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
 class SecureHttpAction (HttpAction):
+
+    def check_auth (self, client):
+        """
+        Check the client authentication status.
+
+        @param client (HttpClient) The HttpClient instance.
+
+        @return (bool) True, if the client has been authenticated, otherwise False.
+        """
+
+        if not client.session or not client.session.is_authenticated():
+            client.raise_response(response_code.HTTP_401)
+
+            return False
+
+        return True
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def check_credentials (self, client):
         """
