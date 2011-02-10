@@ -36,9 +36,12 @@ class ExampleHttpRequest (HttpRequest):
 
 class ExampleServer (Server):
 
-    def handle_init (self):
+    def handle_post_start (self):
         """
-        This callback will be executed during the start of the process immediately before the processing loop starts.
+        This callback will be executed after the call to start().
+
+        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+              processes are provided.
         """
 
         request = ExampleHttpRequest(self, "search.yahoo.com")
