@@ -18,10 +18,6 @@ from elements.model.model    import Int
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-_POOL_INIT_ = False
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 def fetch_all (cursor):
     """
     Retrieve all records from the cursor.
@@ -104,7 +100,7 @@ def init ():
     Initialize database connection pools.
     """
 
-    if _POOL_INIT_:
+    if DatabaseModel._POOL_INIT_:
         return
 
     try:
@@ -128,7 +124,7 @@ def init ():
     except Exception, e:
         raise DatabaseModelException(str(e))
 
-    _POOL_INIT_ = True
+    DatabaseModel._POOL_INIT_ = True
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -246,6 +242,7 @@ class DatabaseModelMetaclass (type):
 
 class DatabaseModel:
 
+    _POOL_INIT_   = False
     __metaclass__ = DatabaseModelMetaclass
 
     # ------------------------------------------------------------------------------------------------------------------
