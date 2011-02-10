@@ -18,6 +18,10 @@ from elements.model.model    import Int
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+_POOL_INIT_ = False
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 def fetch_all (cursor):
     """
     Retrieve all records from the cursor.
@@ -91,19 +95,7 @@ def get_connection (name="default"):
     if name not in settings.databases:
         raise DatabaseModelException("Non-existent database connection pool name %s" % name)
 
-    while True:
-        try:
-            # we open a temporary cursor to verify the connection status, if it raises an exception then the connection
-            # has been closed and we have to try again
-            dbconn = settings.databases[name]["instance"].connection()
-            cursor = dbconn.cursor()
-
-            cursor.close()
-
-            return dbconn
-
-        except Exception, e:
-            print "Cannot open a database connection: %s" % str(e)
+    return settings.databases[name]["instance"].dedicated_connection()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -112,7 +104,7 @@ def init ():
     Initialize database connection pools.
     """
 
-    if DatabaseModel.__POOL_INIT__:
+    if _POOL_INIT_:
         return
 
     try:
@@ -135,6 +127,8 @@ def init ():
 
     except Exception, e:
         raise DatabaseModelException(str(e))
+
+    _POOL_INIT_ = True
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -252,7 +246,6 @@ class DatabaseModelMetaclass (type):
 
 class DatabaseModel:
 
-    __POOL_INIT__ = False
     __metaclass__ = DatabaseModelMetaclass
 
     # ------------------------------------------------------------------------------------------------------------------
