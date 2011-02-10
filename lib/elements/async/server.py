@@ -276,6 +276,18 @@ class Server:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def handle_init (self):
+        """
+        This callback will be executed after the call to start().
+
+        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+              processes are provided.
+        """
+
+        pass
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def handle_loop (self):
         """
         This callback will be executed at the top of each event manager loop.
@@ -290,30 +302,6 @@ class Server:
     def handle_post_daemonize (self):
         """
         This callback will be executed after the parent process daemonizes.
-        """
-
-        pass
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_post_start (self):
-        """
-        This callback will be executed after the call to start().
-
-        Note: This will be called on all children processes. This will also be called on the parent process if no worker
-              processes are provided.
-        """
-
-        pass
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_pre_start (self):
-        """
-        This callback will be executed before the call to start().
-
-        Note: This will be called only a single time when the first process starts up. If and when children processes
-              are spawned, this will not be called.
         """
 
         pass
@@ -559,7 +547,6 @@ class Server:
 
             # start listening on all hosts and then start the server
             self.listen(True)
-            self.handle_pre_start()
             self.start()
 
         except ElementsException:
@@ -585,6 +572,7 @@ class Server:
                 print "+---------------------------------------------------------------+"
                 print "| Elements v0.1.1 Initialized                                   |"
                 print "+---------------------------------------------------------------+"
+
                 print "| Daemonized:          %-40s |" % self._is_daemon
                 print "| Event manager:       %-40s |" % self._event_manager.__class__.__name__
                 print "| Workers:             %-40d |" % self._worker_count
@@ -633,8 +621,7 @@ class Server:
 
         if not self._is_parent or self._worker_count == 0:
             # post start initialization
-            print "post start"
-            self.handle_post_start()
+            self.handle_init()
 
         # loop until the server is going to shutdown
         while not is_shutting_down:
