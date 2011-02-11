@@ -68,6 +68,7 @@ class Server:
         self._group                    = group            # process group
         self._hosts                    = []               # host client/server sockets
         self._is_daemon                = daemonize        # indicates that this is running as a daemon
+        self._is_graceful_shutdown     = False            # indicates that the current shutdown request is graceful
         self._is_listening             = False            # indicates that this process is listening on all hosts
         self._is_long_running          = long_running     # indicates that clients are long-running
         self._is_parent                = True             # indicates that this process is the parent
@@ -323,6 +324,9 @@ class Server:
 
         if code != signal.SIGCHLD:
             self._is_shutting_down = True
+
+            if code in (signal.SIGHUP, signal.SIGTERM):
+                self._is_graceful_shutdown = True
 
             return
 
@@ -624,13 +628,21 @@ class Server:
             self.handle_init()
 
         # loop until the server is going to shutdown
-        while not is_shutting_down:
+        while not is_shutting_down or not self._is_graceful_shutdown:
             now = time()
 
             try:
                 # execute a loop callback at most once per second
                 if now - self._loop_interval > loop_check:
                     is_shutting_down = self._is_shutting_down
+
+                    if is_shutting_down:
+                        if self._is_listening:
+                            self.listen(False)
+
+                        # if we have no regular clients connected we can shutdown
+                        if len(filter(lambda x: not x._is_host and not x._is_channel, self._clients.values())) == 0:
+                            break
 
                     try:
                         loop_check = now
