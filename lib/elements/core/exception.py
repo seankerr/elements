@@ -55,7 +55,7 @@ class ServerException (AsyncException):
     pass
 
 # ----------------------------------------------------------------------------------------------------------------------
-# ELEMENTS.ASYNC.IMPL EXCEPTIONS
+# ELEMENTS.HTTP EXCEPTIONS
 # ----------------------------------------------------------------------------------------------------------------------
 
 class HttpException (ProtocolException):
