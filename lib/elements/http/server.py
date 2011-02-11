@@ -1608,6 +1608,8 @@ class RegexRoutingHttpServer (HttpServer):
               processes are provided.
         """
 
+        HttpServer.handle_init(self)
+
         self._routes = self.parse_routes([], self._routes)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1790,6 +1792,8 @@ class RoutingHttpServer (HttpServer):
         Note: This will be called on all children processes. This will also be called on the parent process if no worker
               processes are provided.
         """
+
+        HttpServer.handle_init(self)
 
         if type(self._routes) != dict:
             raise ServerException("Routes must be an instance of dict")
