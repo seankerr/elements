@@ -785,7 +785,12 @@ class Server:
             for host in self._hosts:
                 self._event_manager.register(host._fileno, host._events)
 
-        self._event_manager_unregister(client._fileno)
+        try:
+            self._event_manager_unregister(client._fileno)
+
+        except:
+            # some event managers auto-remove a descriptor when it is closed, which may cause an exception to be thrown
+            pass
 
         del self._clients[client._fileno]
 
