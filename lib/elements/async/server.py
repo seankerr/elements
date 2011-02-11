@@ -638,6 +638,8 @@ class Server:
                     is_shutting_down = self._is_shutting_down
 
                     if is_shutting_down:
+                        is_graceful_shutdown = self._is_graceful_shutdown
+
                         if self._is_listening:
                             self.listen(False)
 
@@ -646,8 +648,7 @@ class Server:
                             break
 
                     try:
-                        loop_check = now
-
+                        loop_check   = now
                         loop_clients = self.handle_loop()
 
                         if loop_clients == False:
