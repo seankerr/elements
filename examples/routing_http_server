@@ -13,7 +13,6 @@ import sys
 sys.path.append(os.path.abspath("../lib"))
 
 from elements.http.action import HttpAction
-from elements.http.action import StaticHttpAction
 from elements.http.server import RoutingHttpServer
 
 # ----------------------------------------------------------------------------------------------------------------------
@@ -106,7 +105,12 @@ class ExampleValidatingAction (HttpAction):
 
 # start the server
 RoutingHttpServer(hosts=[("0.0.0.0", 8080)],
-                  routes={ "/":         (ExampleAction, ),
-                           "/sentence": (ExampleArgsAction, {"sentence": "Hello, world! This is ExampleArgsAction!"}),
-                           #"/static":   ("(file:.*)", StaticHttpAction, {"fs_root": os.getcwd() + "/static"}),
-                           "/validate": ("(number:\d+)/(word:\w+)", ExampleValidatingAction) }).start()
+                  routes=[
+                           ["/", None, ExampleAction],
+
+                           ["/sentence", None, ExampleArgsAction, {"sentence": "Hello, world! This is ExampleArgsAction!"}],
+
+                           ["/static", "(file:.*)", "elements.http.action.StaticHttpAction", {"fs_root": os.getcwd() + "/static"}],
+
+                           ["/validate", "(number:\d+)/(word:\w+)", ExampleValidatingAction]
+                         ]).start()
