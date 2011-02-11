@@ -615,7 +615,8 @@ class Server:
         # we cache some methods/vars locally to avoid dereferencing in each loop which could potentially be
         # thousands of times per second
         clients                = self._clients
-        is_shutting_down       = False
+        is_graceful_shutdown   = self._is_graceful_shutdown
+        is_shutting_down       = self._is_shutting_down
         loop_check             = 0
         modify_func            = self._event_manager_modify
         poll_func              = self._event_manager_poll
@@ -628,7 +629,7 @@ class Server:
             self.handle_init()
 
         # loop until the server is going to shutdown
-        while not is_shutting_down or not self._is_graceful_shutdown:
+        while not is_shutting_down or not is_graceful_shutdown:
             now = time()
 
             try:
