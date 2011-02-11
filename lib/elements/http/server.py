@@ -1706,7 +1706,7 @@ class RoutingHttpClient (HttpClient):
         This callback will be executed when the request has been parsed and needs dispatched to a handler.
         """
 
-        route = self.in_headers["REQUEST_URI"].split(":", 1)
+        route = self.in_headers["REQUEST_URI"].split(self._server._split_seq, 1)
 
         try:
             pattern, action, is_secure = self._server._routes[route[0]]
@@ -1758,16 +1758,18 @@ class RoutingHttpClient (HttpClient):
 
 class RoutingHttpServer (HttpServer):
 
-    def __init__ (self, routes, **kwargs):
+    def __init__ (self, routes, split_seq=":", **kwargs):
         """
         Create a new RoutingHttpServer instance.
 
-        @param routes (dict) A key->(validation, route) mapping.
+        @param routes    (dict) A key->(validation, route) mapping.
+        @param split_seq (str)  A list of characters around which the URL will be split to determine the route.
         """
 
         HttpServer.__init__(self, **kwargs)
 
-        self._routes = routes
+        self._routes    = routes
+        self._split_seq = split_seq
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1795,35 +1797,41 @@ class RoutingHttpServer (HttpServer):
 
         HttpServer.handle_init(self)
 
-        if type(self._routes) != dict:
-            raise ServerException("Routes must be an instance of dict")
-
         routes       = self._routes
-        self._routes = dict()
+        self._routes = {}
 
-        for script_name, details in routes.items():
+        for route in routes:
+            try:
+                script_name, pattern, action, action_kwargs = route
+
+            except:
+                try:
+                    script_name, pattern, action = route
+
+                    action_kwargs = dict()
+
+                except:
+                    raise ServerException("Invalid route")
+
             if type(script_name) != str:
                 raise ServerException("Invalid route")
 
-            if type(details) not in (list, tuple):
-                # invalid route details
-                raise ServerException("Route details must be a tuple or list for route '%s'" % script_name)
+            if pattern and type(pattern) != str:
+                raise ServerException("Invalid validation pattern for route '%s'" % script_name)
 
-            if type(details[0]) == str:
-                pattern       = details[0]
-                action        = details[1]
-                action_kwargs = dict()
+            if action_kwargs and type(action_kwargs) != dict:
+                raise ServerException("Invalid action arguments for route '%s'" % script_name)
 
-                if len(details) == 3:
-                    action_kwargs = details[2]
+            if type(action) == str:
+                # the action is a string, so we'll try to load it as if it's module.ClassName format
+                fullpath, action = action.rsplit(".", 1)
 
-            else:
-                pattern       = None
-                action        = details[0]
-                action_kwargs = dict()
+                try:
+                    # load the action class
+                    action = getattr(__import__(fullpath, globals(), locals(), [action], -1), action)
 
-                if len(details) == 2:
-                    action_kwargs = details[1]
+                except Exception, e:
+                    raise ServerException("Failed to import action class '%s': %s" % (route[2], str(e)))
 
             if not issubclass(action, HttpAction):
                 raise ServerException("Action for route '%s' must be a sub-class of HttpAction" % script_name)
@@ -1838,34 +1846,23 @@ class RoutingHttpServer (HttpServer):
 
             if pattern:
                 # this route requires a pattern
-                if type(pattern) != str:
-                    raise ServerException("Regex pattern for route '%s' must be a string" % script_name)
-
                 try:
                     # take simplified group names and convert them to regex-style group names
                     for match in re.findall("\((?P<name>[^:]+):(?P<pattern>.*?)(?<!\\\)\)", pattern, re.I):
                         pattern = pattern.replace("(%s:%s)" % match, "(?P<%s>%s)" % match)
 
-                    pattern = re.compile(pattern)
+                    regex = re.compile(pattern)
 
                 except Exception, e:
                     raise ServerException("Regex pattern error for route '%s': %s" % (script_name, str(e)))
 
-                try:
-                    self._routes[script_name] = (pattern, action(server=self, title="Method Not Supported",
-                                                                 response_code=response_code.HTTP_405,
-                                                                 **action_kwargs), is_secure)
-
-                except Exception, e:
-                    raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name,
-                                                                                               str(e)))
-
             else:
-                # no pattern for this route
-                try:
-                    self._routes[script_name] = (None, action(server=self, title="Method Not Supported",
-                                                              response_code=response_code.HTTP_405,
-                                                              **action_kwargs), is_secure)
+                regex = None
 
-                except Exception, e:
-                    raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
+            try:
+                self._routes[script_name] = (regex, action(server=self, title="Method Not Supported",
+                                                           response_code=response_code.HTTP_405,
+                                                           **action_kwargs), is_secure)
+
+            except Exception, e:
+                raise ServerException("Action for route '%s' failed to instantiate: %s" % (script_name, str(e)))
