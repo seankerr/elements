@@ -41,6 +41,8 @@ they would require several other files for them to work
 
 
 this example here is good when you don't want to import an action class in the same file where the route is defined
+this is also the required method of providing an action if you want to take advantage of the code reloading ability
+that Elements provides
 [r"^/path", "some.full.module.path.to.an.action.Class"]
 
 action classes can also take arguments as a dictionary, but make sure you override the constructor in order to
