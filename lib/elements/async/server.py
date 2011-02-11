@@ -57,7 +57,6 @@ class Server:
 
         self._channels                 = {}               # worker channels
         self._channel_count            = channel_count    # count of channels to be created
-        self._children                 = []               # list of child process ids
         self._chroot                   = chroot           # process chroot
         self._clients                  = {}               # all active clients
         self._event_manager            = None             # event manager instance
@@ -80,6 +79,7 @@ class Server:
         self._umask                    = umask            # process umask
         self._user                     = user             # process user
         self._worker_count             = worker_count     # count of worker processes
+        self._workers                  = []               # list of worker process ids
 
         # choose event manager
         if hasattr(select, "epoll") and (event_manager is None or event_manager == "epoll"):
@@ -182,7 +182,7 @@ class Server:
 
         # register signal handlers
         if platform.system() != "Windows":
-            signal.signal(signal.SIGCHLD, self.handle_signal)
+            #signal.signal(signal.SIGCHLD, self.handle_signal)
             signal.signal(signal.SIGHUP,  self.handle_signal)
 
         signal.signal(signal.SIGINT,  self.handle_signal)
@@ -281,7 +281,7 @@ class Server:
         """
         This callback will be executed after the call to start().
 
-        Note: This will be called on all children processes. This will also be called on the parent process if no worker
+        Note: This will be called on all worker processes. This will also be called on the parent process if no worker
               processes are provided.
         """
 
@@ -322,37 +322,20 @@ class Server:
 
             return
 
-        if code != signal.SIGCHLD:
-            self._is_shutting_down = True
+        if self._is_parent:
+            # no matter what, if we're the parent we want all worker processes to shutdown, either permanently
+            # or for a restart
+            self.restart()
 
             if code in (signal.SIGHUP, signal.SIGTERM):
-                self._is_graceful_shutdown = True
+                return
 
-            return
+        self._is_shutting_down = True
 
-        process = None
+        if code in (signal.SIGHUP, signal.SIGTERM):
+            self._is_graceful_shutdown = True
 
-        while True:
-            try:
-                if not process:
-                    process = os.wait()
-
-                if process[0] in self._children:
-                    self._children.remove(process[0])
-
-                if process[0] in self._channels:
-                    for channel in self._channels[process[0]]:
-                        self.unregister_client(channel)
-
-                    del self._channels[process[0]]
-
-                break
-
-            except:
-                pass
-
-        # notify the server that we lost a child
-        self.handle_worker_exited(*process)
+        return
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -396,6 +379,15 @@ class Server:
         @param pid    (int) The process id.
         @param status (int) The exit status.
         """
+
+        if pid in self._workers:
+            self._workers.remove(pid)
+
+        if pid in self._channels:
+            for channel in self._channels[pid]:
+                self.unregister_client(channel)
+
+            del self._channels[pid]
 
         if not self._is_shutting_down:
             self.spawn_worker()
@@ -466,6 +458,18 @@ class Server:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def restart (self):
+        """
+        Send a restart request to all worker processes.
+        """
+
+        for pid in self._workers:
+            # we have HUP and TERM registered because HUP is not legal on Windows
+            # both signals result in the same action
+            os.kill(pid, signal.SIGTERM)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def shutdown (self):
         """
         Unregister all clients and kill worker processes.
@@ -479,7 +483,7 @@ class Server:
             return
 
         # remove the sigchld handler
-        signal.signal(signal.SIGCHLD, signal.SIG_IGN)
+        #signal.signal(signal.SIGCHLD, signal.SIG_IGN)
 
         # unregister and shutdown all clients
         for client in self._clients.values():
@@ -489,12 +493,15 @@ class Server:
             return
 
         # wait for all worker processes to exit
-        for pid in self._children:
+        for pid in self._workers:
             try:
                 os.kill(pid, signal.SIGINT)
 
             except:
                 pass
+
+        for pid in self._workers:
+            os.wait()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -527,7 +534,7 @@ class Server:
 
         if pid:
             # initialize and register worker channels
-            self._children.append(pid)
+            self._workers.append(pid)
             self.__register_channels(self.handle_channels(pid, parent_sockets))
 
             return
@@ -643,9 +650,22 @@ class Server:
                         if self._is_listening:
                             self.listen(False)
 
-                        # if we have no regular clients connected we can shutdown
-                        if len(filter(lambda x: not x._is_host and not x._is_channel, self._clients.values())) == 0:
+                        if self._is_parent and len(self._workers) > 0:
+                            # we cannot exit if we're the parent and there are child processes still running
+                            pass
+
+                        elif len(filter(lambda x: not x._is_host and not x._is_channel, self._clients.values())) == 0:
+                            # we have no regular clients connected so we can shutdown
                             break
+
+                    while self._is_parent and True:
+                        # check for exiting child processes
+                        pid, status = os.waitpid(0, os.WNOHANG)
+
+                        if not pid:
+                            break
+
+                        self.handle_worker_exited(pid, status)
 
                     try:
                         loop_check   = now
