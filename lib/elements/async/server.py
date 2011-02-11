@@ -660,12 +660,13 @@ class Server:
 
                     while self._is_parent and True:
                         # check for exiting child processes
-                        pid, status = os.waitpid(0, os.WNOHANG)
+                        try:
+                            pid, status = os.waitpid(0, os.WNOHANG)
 
-                        if not pid:
+                            self.handle_worker_exited(pid, status)
+
+                        except:
                             break
-
-                        self.handle_worker_exited(pid, status)
 
                     try:
                         loop_check   = now
