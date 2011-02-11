@@ -783,7 +783,11 @@ class Server:
             # we're serving long-running requests so we must reregister the host filenos that we removed when the
             # current client connected
             for host in self._hosts:
-                self._event_manager.register(host._fileno, host._events)
+                try:
+                    self._event_manager.register(host._fileno, host._events)
+
+                except:
+                    pass
 
         try:
             self._event_manager_unregister(client._fileno)
