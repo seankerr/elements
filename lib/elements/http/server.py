@@ -410,7 +410,7 @@ class HttpClient (Client):
         self.files                = None
         self.flush                = self._orig_flush
         self.in_cookies           = {}
-        self.in_headers           = {}
+        self.in_headers           = { "SERVER_PROTOCOL": "HTTP/1.0" }
         self.out_cookies          = {}
         self.out_headers          = {}
         self.read_delimiter       = self._orig_read_delimiter
@@ -421,11 +421,11 @@ class HttpClient (Client):
         # parse method, uri and protocol
         try:
             data                  = data.rstrip()
-            method, uri, protocol = data.split(" ")
+            method, uri, protocol = data.split(" ", 2)
 
         except:
             try:
-                method, uri = data.split(" ")
+                method, uri = data.split(" ", 1)
                 protocol    = "HTTP/1.0"
 
             except:
@@ -434,7 +434,7 @@ class HttpClient (Client):
 
                 return
 
-        # verify method and protocol
+        # verify request
         method   = method.upper()
         protocol = protocol.upper()
 
@@ -449,6 +449,9 @@ class HttpClient (Client):
             self.raise_response(response_code.HTTP_505)
 
             return
+
+        if not uri.startswith("/"):
+            uri = "/".join(("", uri))
 
         # initialize headers
         in_headers = { "HTTP_CONTENT_TYPE": "text/plain",
@@ -1470,7 +1473,8 @@ class HttpServer (Server):
             client.response_code = response_code.HTTP_500
 
             client.compose_headers()
-            client.write("<h1>Internal Server Error</h1>")
+            client.write("<html><head><title>Internal Server Error</title></head><body>" \
+                         "<h1>Internal Server Error</h1></body></html>")
             client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
