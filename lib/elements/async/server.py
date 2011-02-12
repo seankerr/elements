@@ -654,6 +654,9 @@ class Server:
                         try:
                             pid, status = os.waitpid(0, os.WNOHANG)
 
+                            if not pid:
+                                break
+
                             self.handle_worker_exited(pid, status)
 
                         except:
