@@ -12,7 +12,6 @@ import sys
 
 sys.path.append(os.path.abspath("../lib"))
 
-from elements.http.action import HttpAction
 from elements.http.server import RegexRoutingHttpServer
 
 # ----------------------------------------------------------------------------------------------------------------------
