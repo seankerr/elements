@@ -17,34 +17,6 @@ from elements.http.server import RoutingHttpServer
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class ExampleAction (HttpAction):
-
-    def get (self, client):
-        """
-        Handle a GET request.
-
-        @param client (HttpClient) The HttpClient instance.
-        """
-
-        client.compose_headers()
-        client.write("GET served")
-        client.flush()
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def post (self, client):
-        """
-        Handle a GET request.
-
-        @param client (HttpClient) The HttpClient instance.
-        """
-
-        client.compose_headers()
-        client.write("POST served")
-        client.flush()
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 class ExampleArgsAction (HttpAction):
 
     def __init__ (self, sentence, **kwargs):
@@ -106,11 +78,11 @@ class ExampleValidatingAction (HttpAction):
 # start the server
 RoutingHttpServer(hosts=[("0.0.0.0", 8080)],
                   routes=[
-                           ["/", None, ExampleAction],
+                           ["/", None, "elements.http.action.TestHttpAction"],
 
                            ["/sentence", None, ExampleArgsAction, {"sentence": "Hello, world! This is ExampleArgsAction!"}],
 
-                           ["/static", "(file:.*)", "elements.http.action.StaticHttpAction", {"fs_root": os.getcwd() + "/static"}],
+                           #["/static", "(file:.*)", "elements.http.action.StaticHttpAction", {"fs_root": os.getcwd() + "/static"}],
 
                            ["/validate", "(number:\d+)/(word:\w+)", ExampleValidatingAction]
                          ]).start()

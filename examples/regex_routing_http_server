@@ -17,22 +17,10 @@ from elements.http.server import RegexRoutingHttpServer
 
 # ----------------------------------------------------------------------------------------------------------------------
 
-class TestAction (HttpAction):
-
-    def get (self, client):
-
-        client.compose_headers()
-        client.write("GET served on %s" % client.in_headers["REQUEST_URI"])
-        client.write("<br>Params: ")
-        client.write(str(client.params))
-        client.flush()
-
-# ----------------------------------------------------------------------------------------------------------------------
-
 # start the server
 RegexRoutingHttpServer(hosts=[("0.0.0.0", 8080)],
                        routes=[
-                           [r"^/", TestAction],
+                           [r"^/", "elements.http.action.TestHttpAction"],
                        ]).start()
 
 """
