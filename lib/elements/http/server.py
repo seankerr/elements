@@ -1610,6 +1610,10 @@ class RegexRoutingHttpServer (HttpServer):
 
         HttpServer.handle_init(self)
 
+        if type(self._routes) == str:
+            # the routes are a string, so we'll try to load it as if it's module.List format
+            self._routes = elements.include(self._routes)
+
         self._routes = self.parse_routes([], self._routes)
 
     # ------------------------------------------------------------------------------------------------------------------
@@ -1799,6 +1803,10 @@ class RoutingHttpServer (HttpServer):
 
         routes       = self._routes
         self._routes = {}
+
+        if type(routes) == str:
+            # the routes are a string, so we'll try to load it as if it's module.List format
+            routes = elements.include(routes)
 
         for route in routes:
             try:
