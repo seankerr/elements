@@ -1470,12 +1470,7 @@ class HttpServer (Server):
             return
 
         if not client._is_headers_written:
-            client.response_code = response_code.HTTP_500
-
-            client.compose_headers()
-            client.write("<html><head><title>Internal Server Error</title></head><body>" \
-                         "<h1>Internal Server Error</h1></body></html>")
-            client.flush()
+            client.raise_response(response_code.HTTP_500)
 
     # ------------------------------------------------------------------------------------------------------------------
 
