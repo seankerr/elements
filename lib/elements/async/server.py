@@ -87,11 +87,13 @@ class Server:
 
         elif hasattr(select, "kqueue") and (event_manager is None or event_manager == "kqueue"):
             self._event_manager = KQueueEventManager
+            """
             self._worker_count  = 0
 
             if worker_count > 0:
                 print "KQueue does not support parent process file descriptor inheritence, " \
                       "so workers have been disabled. If you want that ability, you must use the Select event manager."
+            """
 
         elif hasattr(select, "poll") and (event_manager is None or event_manager == "poll"):
             self._event_manager = PollEventManager
@@ -208,7 +210,7 @@ class Server:
             host.bind((ip, port))
             host.listen(socket.SOMAXCONN)
 
-            self.register_host(HostClient(host, (ip, port), self))
+            self._hosts.append(HostClient(host, (ip, port), self))
 
         except socket.error, e:
             raise HostException("Cannot add host on ip '%s' port '%d': %s" % (ip, port, e[1]))
@@ -444,17 +446,6 @@ class Server:
             # this process until the current client is finished
             for host in self._hosts:
                 self._event_manager.unregister(host._fileno)
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def register_host (self, host):
-        """
-        Register a host.
-
-        @param host (HostClient) The host client.
-        """
-
-        self._hosts.append(host)
 
     # ------------------------------------------------------------------------------------------------------------------
 
