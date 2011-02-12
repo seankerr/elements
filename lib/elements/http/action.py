@@ -220,3 +220,45 @@ class StaticHttpAction (HttpAction):
         if not file.startswith(self._fs_root) or file == self._fs_root or not client.serve_static_file(file):
             # wrong location or file doesn't exist/can't be opened for reading
             client.raise_response(response_code.HTTP_404)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
+class TestHttpAction (HttpAction):
+
+    def get (self, client):
+        """
+        Handle a GET request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        import pprint
+
+        pprint = pprint.PrettyPrinter(indent=4)
+
+        client.compose_headers()
+
+        client.write("<html><head><title>TestHttpAction</title></head><body>")
+        client.write("<h1>client.in_headers</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.in_headers))
+        client.write("</pre>")
+        client.write("<h1>client.out_headers</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.out_headers))
+        client.write("</pre>")
+        client.write("<h1>client.in_cookies</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.in_cookies))
+        client.write("</pre>")
+        client.write("<h1>client.out_cookies</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.out_cookies))
+        client.write("</pre>")
+        client.write("<h1>client.params</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.params))
+        client.write("</pre>")
+        client.write("</body></html>")
+
+        client.flush()
