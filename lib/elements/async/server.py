@@ -87,13 +87,11 @@ class Server:
 
         elif hasattr(select, "kqueue") and (event_manager is None or event_manager == "kqueue"):
             self._event_manager = KQueueEventManager
-            """
             self._worker_count  = 0
 
             if worker_count > 0:
                 print "KQueue does not support parent process file descriptor inheritence, " \
                       "so workers have been disabled. If you want that ability, you must use the Select event manager."
-            """
 
         elif hasattr(select, "poll") and (event_manager is None or event_manager == "poll"):
             self._event_manager = PollEventManager
