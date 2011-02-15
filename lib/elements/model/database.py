@@ -113,11 +113,8 @@ def init ():
             if "pool" not in data:
                 raise DatabaseModelException("Database %s is missing pool setting" % name)
 
-            api  = data["api"]
-            pool = data["pool"]
-
-            del data["api"]
-            del data["pool"]
+            api  = data.pop("api")
+            pool = data.pop("pool")
 
             settings.databases[name]["instance"] = PooledDB(api, pool, **data)
 
