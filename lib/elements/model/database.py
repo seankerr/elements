@@ -10,8 +10,6 @@ import new
 
 import settings
 
-from DBUtils.PooledDB import PooledDB
-
 from elements.core.exception import DatabaseModelException
 from elements.core.exception import ModelException
 from elements.model.model    import Int
@@ -99,6 +97,8 @@ def init ():
     """
     Initialize database connection pools.
     """
+
+    from DBUtils.PooledDB import PooledDB
 
     if DatabaseModel._POOL_INIT_:
         return
