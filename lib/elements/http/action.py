@@ -9,7 +9,8 @@ import os
 
 import settings
 
-from elements.http import response_code
+from elements.http  import response_code
+from elements.model import database
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -27,6 +28,12 @@ class HttpAction:
         self._server         = server
         self.__response_code = response_code
         self.__title         = title
+
+        # add a few composite functions for quicker database access
+        self.db_fetch_all      = database.fetch_all
+        self.db_fetch_many     = database.fetch_many
+        self.db_fetch_one      = database.fetch_one
+        self.db_get_connection = database.get_connection
 
     # ------------------------------------------------------------------------------------------------------------------
 
