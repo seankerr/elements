@@ -73,6 +73,7 @@ class Server:
         self._is_parent                = True             # indicates that this process is the parent
         self._is_shutting_down         = False            # indicates that this server is shutting down
         self._loop_interval            = loop_interval    # the interval in seconds between calling handle_loop()
+        self._parent_pid               = os.getpid()      # the parent process id
         self._print_settings           = print_settings   # indicates that the settings should be printed to the console
         self._timeout                  = timeout          # the timeout in seconds for a client to be removed
         self._timeout_interval         = timeout_interval # the interval in seconds between checking for idle clients
