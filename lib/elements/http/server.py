@@ -1545,9 +1545,6 @@ class RegexRoutingHttpClient (HttpClient):
                         return
 
                     if not route[1].check_credentials(self):
-                        # user doesn't have required credentials
-                        self.redirect(settings.http_credentials_url)
-
                         return
 
                 # return matching action
@@ -1719,13 +1716,9 @@ class RoutingHttpClient (HttpClient):
 
         if is_secure:
             if not action.check_auth(self):
-
                 return
 
             if not action.check_credentials(self):
-                # user doesn't have required credentials
-                self.redirect(settings.http_credentials_url)
-
                 return
 
         if not pattern:
