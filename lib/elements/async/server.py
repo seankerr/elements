@@ -294,7 +294,7 @@ class Server:
         """
         This callback will be executed at the top of each event manager loop.
 
-        @return (object) A list of modified clients (or an empty list), if processing should continue, otherwise False.
+        @return (list) A list of modified clients (or an empty list).
         """
 
         return []
@@ -661,6 +661,7 @@ class Server:
                             self.handle_worker_exited(pid, status)
 
                         except Exception, e:
+                            # an unhandled exception has been caught
                             self.handle_exception(e)
 
                     # execute a timeout callback at most every [timeout interval] seconds
