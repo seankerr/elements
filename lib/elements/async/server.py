@@ -349,8 +349,6 @@ class Server:
         now          = time()
         minimum_time = now - self._timeout
 
-        EVENT_READ = self.EVENT_READ
-
         # iterate all clients and find the ones that are timed out/idle
         # execute the timeout callback and determine what to do
         for client in filter(lambda x: x._last_access_time < minimum_time and not x._is_channel and not x._is_host,
