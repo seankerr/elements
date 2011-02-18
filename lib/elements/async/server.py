@@ -650,18 +650,18 @@ class Server:
                             # we have no regular clients connected so we can shutdown
                             break
 
-                    while self._is_parent and True:
+                    while self._is_parent and len(self._workers) > 0:
                         # check for exiting child processes
+                        pid, status = os.waitpid(0, os.WNOHANG)
+
+                        if not pid:
+                            break
+
                         try:
-                            pid, status = os.waitpid(0, os.WNOHANG)
-
-                            if not pid:
-                                break
-
                             self.handle_worker_exited(pid, status)
 
-                        except:
-                            break
+                        except Exception, e:
+                            self.handle_exception(e)
 
                     # execute a timeout callback at most every [timeout interval] seconds
                     if self._timeout and now - self._timeout_interval > timeout_check:
