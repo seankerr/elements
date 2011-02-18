@@ -617,6 +617,7 @@ class Server:
         loop_check             = 0
         modify_func            = self._event_manager_modify
         poll_func              = self._event_manager_poll
+        shutdown_check         = 0
         timeout_check          = 0
         unregister_func        = self._event_manager_unregister
         unregister_client_func = self.unregister_client
@@ -630,9 +631,10 @@ class Server:
             now = time()
 
             try:
-                # execute a loop callback at most once per second
-                if now - self._loop_interval > loop_check:
+                if now - 1 > shutdown_check:
+                    # check shutdown status and for exiting worker processes
                     is_shutting_down = self._is_shutting_down
+                    shutdown_check   = now
 
                     if is_shutting_down:
                         is_graceful_shutdown = self._is_graceful_shutdown
@@ -661,31 +663,35 @@ class Server:
                         except:
                             break
 
-                    try:
-                        loop_check   = now
-                        loop_clients = self.handle_loop()
-
-                        if loop_clients == False:
-                            # the loop callback is telling us to shutdown
-                            break
-
-                        # update the events for any clients that were changed during the loop handler
-                        for client in loop_clients:
-                            modify_func(client._fileno, client._events)
-
-                        # execute a timeout callback at most every [timeout interval] seconds
-                        if self._timeout and now - self._timeout_interval > timeout_check:
+                    # execute a timeout callback at most every [timeout interval] seconds
+                    if self._timeout and now - self._timeout_interval > timeout_check:
+                        try:
                             timeout_check = now
 
                             # update the events for any clients that have timed out and are still going to be processed
                             for client in self.handle_timeout_check():
                                 modify_func(client._fileno, client._events)
 
-                    except Exception, e:
-                        # an unhandled exception has been caught
-                        self.handle_exception(e)
+                        except Exception, e:
+                            # an unhandled exception has been caught
+                            self.handle_exception(e)
 
-                        continue
+                            continue
+
+                    # execute a loop callback at most once per second
+                    if now - self._loop_interval > loop_check:
+                        try:
+                            loop_check = now
+
+                            # update the events for any clients that were changed during the loop handler
+                            for client in self.handle_loop():
+                                modify_func(client._fileno, client._events)
+
+                        except Exception, e:
+                            # an unhandled exception has been caught
+                            self.handle_exception(e)
+
+                            continue
 
                 # iterate over all clients that have an active event
                 for fileno, events in poll_func():
