@@ -266,6 +266,21 @@ class TestHttpAction (HttpAction):
         client.write("<pre>")
         client.write(pprint.pformat(client.params))
         client.write("</pre>")
+        client.write("<h1>client.files</h1>")
+        client.write("<pre>")
+        client.write(pprint.pformat(client.files))
+        client.write("</pre>")
         client.write("</body></html>")
 
         client.flush()
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def post (self, client):
+        """
+        Handle a POST request.
+
+        @param client (HttpClient) The HttpClient instance.
+        """
+
+        self.get(client)
