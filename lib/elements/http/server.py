@@ -846,6 +846,8 @@ class HttpClient (Client):
         """
         Attempt to validate request parameters.
 
+        Note: This will strip all space from string parameters.
+
         @param types (str) The expected types of the parameters.
         """
 
@@ -874,7 +876,7 @@ class HttpClient (Client):
                         values.append(decimal.Decimal(param_value))
 
                     else:
-                        values.append(param_value)
+                        values.append(param_value.strip())
 
                 except:
                     values.append(args[i][1])
