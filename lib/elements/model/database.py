@@ -26,7 +26,7 @@ def fetch_all (cursor):
     """
 
     if cursor.rowcount == 0 or not cursor.description:
-        return None
+        return []
 
     fields  = [field[0] for field in cursor.description]
     records = []
@@ -49,7 +49,7 @@ def fetch_many (cursor, count):
     """
 
     if cursor.rowcount == 0 or not cursor.description:
-        return None
+        return []
 
     fields  = [field[0] for field in cursor.description]
     records = []
