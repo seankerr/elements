@@ -28,15 +28,15 @@ def include (mod_path):
 
         return getattr(mod, mod_attr)
 
-    except:
+    except AttributeError:
         pass
+
+    except Exception, e:
+        raise Exception("Failed to include module or attribute '%s': %s" % (mod_path, str(e)))
 
     # perhaps mod_path is a module
     try:
         return __import__(mod_path, globals(), locals(), [], -1)
 
     except:
-        pass
-
-    # can't seem to locate the expected module or attribute
-    raise Exception("Failed to include module or attribute '%s'" % mod_path)
+        raise Exception("Failed to include module or attribute '%s'" % mod_path)
