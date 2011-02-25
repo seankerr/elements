@@ -11,9 +11,12 @@ try:
 except:
     import StringIO
 
+import new
 import os
 import socket
 import time
+
+import settings
 
 from elements.core.exception import ChannelException
 from elements.core.exception import ClientException
@@ -26,7 +29,31 @@ EVENT_WRITE  = 0
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+class ClientMetaclass (type):
+
+    def __init__ (cls, name, bases, members):
+        """
+        Create a new ClientMetaclass instance.
+
+        @param cls     (class) The metaclass instance.
+        @param name    (str)   The class name.
+        @param bases   (tuple) The class base and interfaces.
+        @param members (dict)  The class members.
+        """
+
+        if settings.io_debugging:
+            cls.handle_read  = cls.handle_read_debug
+            cls.handle_write = cls.handle_write_debug
+
+        return type.__init__(cls, name, bases, members)
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class Client:
+
+    __metaclass__ = ClientMetaclass
+
+    # ------------------------------------------------------------------------------------------------------------------
 
     def __init__ (self, client_socket, client_address, server, server_address):
         """
@@ -80,6 +107,19 @@ class Client:
         self._write_buffer.truncate(0)
 
         self._write_index = 0
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def debug_replace (self, data):
+        """
+        Replace standard escape character data with a text representation.
+
+        @param data (str) The data to replace.
+        """
+
+        return data.replace("\n", "\\n") \
+                   .replace("\r", "\\r") \
+                   .replace("\t", "\\t")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -137,6 +177,43 @@ class Client:
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def handle_read_debug (self):
+        """
+        This callback will be executed when read data is available. All read data will be printed to console.
+        """
+
+        data = self._client_socket.recv(self._read_size)
+
+        if len(data) == 0:
+            # the client closed the connection
+            self._events = 0
+
+            return
+
+        print "> Data (%s:%d) %d bytes" % (self._client_address[0], self._client_address[1], len(data))
+
+        if settings.io_display_data:
+            if settings.io_display_ord:
+                print ">>",
+
+                for char in data:
+                    print "'%s' %d" % (self.debug_replace(char), ord(char)),
+
+                print
+
+            else:
+                print ">>", self.debug_replace(data)
+
+        self._read_buffer.write(data)
+
+        if self._read_delimiter:
+            self.read_delimiter(self._read_delimiter, self._read_callback, self._read_max_bytes)
+
+        elif self._read_length:
+            self.read_length(self._read_length, self._read_callback)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def handle_shutdown (self):
         """
         This callback will be executed when this Client instance is shutting down.
@@ -172,6 +249,51 @@ class Client:
         data   = buffer.getvalue()
         chunk  = data[self._write_index:]
         length = self._client_socket.send(chunk)
+
+        # increase the write index (this helps cut back on small writes)
+        self._write_index += length
+
+        if length == len(chunk):
+            # write buffer has been entirely written
+            self._events &= ~EVENT_WRITE
+
+            self.handle_write_finished()
+
+            return
+
+        # there is more data to write
+        # note: we speed up small writes by eliminating the seek/truncate/write on every call
+        if self._write_index >= 65535:
+            buffer.truncate(0)
+            buffer.write(data[self._write_index:])
+
+            self._write_index = 0
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_write_debug (self):
+        """
+        This callback will be executed when write data is available.
+        """
+
+        buffer = self._write_buffer
+        data   = buffer.getvalue()
+        chunk  = data[self._write_index:]
+        length = self._client_socket.send(chunk)
+
+        print "< Data (%s:%d) %d bytes" % (self._client_address[0], self._client_address[1], length)
+
+        if settings.io_display_data:
+            if settings.io_display_ord:
+                print "<<",
+
+                for char in data[:length]:
+                    print "'%s' %d" % (self.debug_replace(char), ord(char)),
+
+                print
+
+            else:
+                print "<<", self.debug_replace(data[:length])
 
         # increase the write index (this helps cut back on small writes)
         self._write_index += length
@@ -388,6 +510,28 @@ class HostClient (Client):
         """
 
         client_socket, client_address = self._client_socket.accept()
+
+        try:
+            self._handle_client(client_socket, client_address, self._client_address)
+
+        except Exception, e:
+            client_socket.close()
+
+            raise ClientException("Cannot create client: %s" % e)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
+    def handle_read_debug (self):
+        """
+        Accept a new client connection.
+
+        Note: This debugging method is an exact duplicate of HostClient.handle_read() and is only here because it's a
+              necessity during i/o debugging.
+        """
+
+        client_socket, client_address = self._client_socket.accept()
+
+        print "> New client (%s:%d)" % client_address
 
         try:
             self._handle_client(client_socket, client_address, self._client_address)
