@@ -825,14 +825,13 @@ class Server:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def write_channel (self, data, channel_index=0, pid=0, flush=True):
+    def write_channel (self, data, channel_index=0, pid=0):
         """
         Write data to a channel.
 
-        @param data          (str)  The data.
-        @param channel_index (int)  The channel index.
-        @param pid           (int)  The process id.
-        @param flush         (bool) Indicates that the data should be flushed to the channel immediately.
+        @param data          (str) The data.
+        @param channel_index (int) The channel index.
+        @param pid           (int) The process id.
 
         @return (str) If the channel is blocking, the response will be returned immediately. Otherwise nothing is
                       returned.
@@ -844,13 +843,7 @@ class Server:
         except KeyError:
             raise ChannelException("Invalid pid or channel index")
 
-        if channel._is_blocking:
-            return channel.write(data)
-
-        channel.write(data)
-
-        if flush:
-            channel.flush()
+        return channel.write(data)
 
     # ------------------------------------------------------------------------------------------------------------------
 
