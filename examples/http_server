@@ -62,9 +62,6 @@ class ExampleClient (HttpClient):
 
         self.write("<h3>Pid: <span style=\"color: #F00\">%d</span></h3>" % os.getpid())
 
-        # flush the response
-        self.flush()
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 class ExampleServer (HttpServer):
