@@ -589,7 +589,7 @@ class HttpClient (Client):
 
                 self._static_file = None
 
-        if self.__is_chunked_encoded and self._chunked_write_buffer.tell() > 0:
+        if self._chunked_write_buffer.tell() > 0:
             self.__chunked_flush()
 
             return
