@@ -71,7 +71,6 @@ class HttpClient (Client):
         self._is_headers_written      = False               # indicates that the headers have been written
         self._max_persistent_requests = None                # maximum persistent requests allowed
         self._multipart_file          = None                # current multipart upload file
-        self._orig_flush              = self.flush          # original flush method
         self._orig_read_delimiter     = self.read_delimiter # original read delimiter method
         self._orig_write              = self.write          # original write method
         self._request_count           = 0                   # count of served requests (only useful if persistence is
@@ -147,14 +146,13 @@ class HttpClient (Client):
             self.write("\r\n")
 
         self.write("\r\n")
-        self.flush()
 
         if chunked_encoding:
-            # future flush and write operations must use a chunked encoding
-            self.flush = self.__chunked_flush
+            # future write operations must use a chunked encoding
             self.write = self.__chunked_write
 
-        self._is_headers_written = True
+        self.__is_chunked_encoded = True
+        self._is_headers_written  = True
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -400,6 +398,7 @@ class HttpClient (Client):
         @param data (str) The data that has tentatively been found as the request line.
         """
 
+        self.__is_chunked_encoded = False
         self.__files              = []
         self._is_headers_written  = False
         self._multipart_file      = None
@@ -408,7 +407,6 @@ class HttpClient (Client):
         self._static_file         = None
         self.content_type         = "text/html"
         self.files                = None
-        self.flush                = self._orig_flush
         self.in_cookies           = {}
         self.in_headers           = { "SERVER_PROTOCOL": "HTTP/1.0" }
         self.out_cookies          = {}
@@ -584,26 +582,24 @@ class HttpClient (Client):
             if len(data) > 0:
                 # more data to write
                 self.write(data)
-                self.flush()
 
-                return
+            else:
+                # finished reading file
+                self._static_file.close()
 
-            # finished reading file
-            self._static_file.close()
+                self._static_file = None
 
-            self._static_file = None
+        if self.__is_chunked_encoded and self._chunked_write_buffer.tell() > 0:
+            self.__chunked_flush()
 
-        elif self._is_allowing_persistence and self._persistence_type:
+            return
+
+        if self._is_allowing_persistence and self._persistence_type:
             # allowing another request
             self.clear_write_buffer()
 
             # read until we hit the end of the headers
             self.read_delimiter("\r\n", self.handle_request, settings.http_max_request_length)
-
-            return
-
-        # clear the events so the server inits the shutdown sequence
-        self.clear_events()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -711,9 +707,10 @@ class HttpClient (Client):
                     file["error"]            = ERROR_UPLOAD_MAX_SIZE
                     self._is_multipart_maxed = True
 
-        self._read_callback  = callback
-        self._read_delimiter = delimiter
-        self._read_max_bytes = max_bytes
+        self._events         |= self._server.EVENT_READ
+        self._read_callback   = callback
+        self._read_delimiter  = delimiter
+        self._read_max_bytes  = max_bytes
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -752,7 +749,6 @@ class HttpClient (Client):
         self.response_code           = response_code.HTTP_307
 
         self.compose_headers()
-        self.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -823,7 +819,6 @@ class HttpClient (Client):
             # compose headers and write the first portion of the file
             self.compose_headers()
             self.write(file.read(FILE_READ_SIZE))
-            self.flush()
 
             return True
 
@@ -888,11 +883,9 @@ class HttpClient (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def __chunked_flush (self, last=True):
+    def __chunked_flush (self):
         """
         Notify the event manager that there is write data available.
-
-        @param last (bool) Indicates that this is the last chunk of data being flushed.
         """
 
         # flush using chunked transfer encoding
@@ -902,12 +895,7 @@ class HttpClient (Client):
         buffer.truncate(0)
 
         Client.write(self, "".join((hex(len(data))[2:], "\r\n", data, "\r\n")))
-
-        if last:
-            # this is the last chunk so write the ending chunk size followed by an empty set of footers
-            Client.write(self, "0\r\n\r\n\r\n")
-
-        Client.flush(self)
+        Client.write(self, "0\r\n\r\n\r\n")
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -1297,7 +1285,6 @@ class HttpRequest (Client):
 
         self.write("\r\n")
         self.write(encoded_parameters)
-        self.flush()
 
         # read until we reach the end of the initial response line
         self.read_delimiter("\r\n", self.handle_response_code)
