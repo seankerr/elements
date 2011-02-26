@@ -123,15 +123,6 @@ class Client:
 
     # ------------------------------------------------------------------------------------------------------------------
 
-    def flush (self):
-        """
-        Notify the event manager that there is write data available.
-        """
-
-        self._events |= EVENT_WRITE
-
-    # ------------------------------------------------------------------------------------------------------------------
-
     def handle_error (self):
         """
         This callback will be executed when a read/write error has occurred.
@@ -340,7 +331,8 @@ class Client:
 
         if pos > -1:
             # the delimiter has been found
-            self._read_delimiter = None
+            self._events         &= ~EVENT_READ
+            self._read_delimiter  = None
 
             if max_bytes and pos > max_bytes:
                 # the maximum byte limit has been reached
@@ -372,9 +364,10 @@ class Client:
 
             max_bytes = None
 
-        self._read_callback  = callback
-        self._read_delimiter = delimiter
-        self._read_max_bytes = max_bytes
+        self._events         |= EVENT_READ
+        self._read_callback   = callback
+        self._read_delimiter  = delimiter
+        self._read_max_bytes  = max_bytes
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -388,7 +381,8 @@ class Client:
 
         if self._read_buffer.tell() >= length:
             # the read buffer has met our length requirement
-            self._read_length = None
+            self._events      &= ~EVENT_READ
+            self._read_length  = None
 
             buffer = self._read_buffer
             data   = buffer.getvalue()
@@ -401,30 +395,9 @@ class Client:
             return
 
         # there is still more to read
-        self._read_callback = callback
-        self._read_length   = length
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def set_linger (self, linger):
-        """
-        Set the linger status.
-
-        If enabling linger, all events will be removed and the linger event is added. If disabling linger, all events
-        will be removed and the read event is added. When disabling linger it is necessary to setup a read handler in
-        order to receive notification.
-        """
-
-        self._read_delimiter = None
-        self._read_length    = None
-
-        if linger:
-            self._events = EVENT_LINGER
-
-        else:
-            self._events = EVENT_READ
-
-        self._server._event_manager_modify(self._fileno, self._events)
+        self._events        |= EVENT_READ
+        self._read_callback  = callback
+        self._read_length    = length
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -436,6 +409,8 @@ class Client:
         """
 
         self._write_buffer.write(data)
+
+        self._events |= EVENT_WRITE
 
 # ----------------------------------------------------------------------------------------------------------------------
 
