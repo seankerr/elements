@@ -49,7 +49,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -65,7 +64,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -81,7 +79,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -97,7 +94,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -113,7 +109,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -129,7 +124,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -145,7 +139,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -161,7 +154,6 @@ class HttpAction:
         client.compose_headers()
         client.write("<html><head><title>%s</title></head><body><h1>%s</h1></body></html>" % \
                      (self.__title, self.__title))
-        client.flush()
 
 # ----------------------------------------------------------------------------------------------------------------------
 
@@ -244,7 +236,6 @@ class TestHttpAction (HttpAction):
         pprint = pprint.PrettyPrinter(indent=4)
 
         client.compose_headers()
-
         client.write("<html><head><title>TestHttpAction</title></head><body>")
         client.write("<h1>client.in_headers</h1>")
         client.write("<pre>")
@@ -271,8 +262,6 @@ class TestHttpAction (HttpAction):
         client.write(pprint.pformat(client.files))
         client.write("</pre>")
         client.write("</body></html>")
-
-        client.flush()
 
     # ------------------------------------------------------------------------------------------------------------------
 
