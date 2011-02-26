@@ -431,6 +431,8 @@ class Client:
     def write (self, data):
         """
         Append data onto the write buffer.
+
+        @param data (str) The data to write.
         """
 
         self._write_buffer.write(data)
