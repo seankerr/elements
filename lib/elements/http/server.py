@@ -1352,6 +1352,17 @@ class HttpRequest (Client):
 
     # ------------------------------------------------------------------------------------------------------------------
 
+    def set_cookies (self, cookies):
+        """
+        Merge multiple cookies.
+
+        @param cookies (dict) The cookies to merge.
+        """
+
+        self.out_cookies.update(cookies)
+
+    # ------------------------------------------------------------------------------------------------------------------
+
     def set_header (self, name, value):
         """
         Set a header.
