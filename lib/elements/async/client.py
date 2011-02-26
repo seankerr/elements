@@ -278,13 +278,13 @@ class Client:
             if settings.io_display_ord:
                 print "<<",
 
-                for char in data[:length]:
+                for char in chunk[:length]:
                     print "'%s' %d" % (self.debug_replace(char), ord(char)),
 
                 print
 
             else:
-                print "<<", self.debug_replace(data[:length])
+                print "<<", self.debug_replace(chunk[:length])
 
         # increase the write index (this helps cut back on small writes)
         self._write_index += length
