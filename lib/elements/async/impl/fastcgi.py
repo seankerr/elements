@@ -471,7 +471,7 @@ class FastcgiClient (Client):
             elif key == FCGI_MPXS_CONNS:
                 responses[key] = "1" if self._is_allowing_persistence else "0"
 
-        self._write_record_and_flush(_GetValuesResultRecord(responses))
+        self._write_record(_GetValuesResultRecord(responses))
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -483,7 +483,7 @@ class FastcgiClient (Client):
         """
 
         unknown_type = header["type"]
-        self._write_record_and_flush(_UnknownTypeRecord(unknown_type))
+        self._write_record(_UnknownTypeRecord(unknown_type))
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -518,9 +518,6 @@ class FastcgiClient (Client):
 
             self._write_record(_EndRequestRecord(0 if status is None else status, FCGI_REQUEST_COMPLETE, self.request_id))
 
-            # flush everything at the end of the request; this can result in the connection closing
-            self.flush()
-
         else:
             self._read_record()
 
@@ -536,10 +533,10 @@ class FastcgiClient (Client):
         """
 
         request_id = header["request_id"]
-        
+
         if self.request_id:
             # we're already executing a request, so cancel this one
-            self._write_record_and_flush(_EndRequestRecord(0, FCGI_CANT_MPX_CONN))
+            self._write_record(_EndRequestRecord(0, FCGI_CANT_MPX_CONN))
 
         self.request_id = request_id
 
@@ -551,7 +548,7 @@ class FastcgiClient (Client):
 
         elif self._maximum_requests and self._handled_requests > self._maximum_requests:
             self._persistence_requested = False
-            self._write_record_and_flush(_EndRequestRecord(0, FCGI_OVERLOADED, request_id))
+            self._write_record(_EndRequestRecord(0, FCGI_OVERLOADED, request_id))
             return
 
         if role == FCGI_RESPONDER:
@@ -568,7 +565,7 @@ class FastcgiClient (Client):
             self._read_record()
 
         else:
-            self._write_record_and_flush(_EndRequestRecord(0, FCGI_UNKNOWN_ROLE, request_id))
+            self._write_record(_EndRequestRecord(0, FCGI_UNKNOWN_ROLE, request_id))
 
     # ------------------------------------------------------------------------------------------------------------------
 
@@ -728,31 +725,6 @@ class FastcgiClient (Client):
             else:
                 self._events &= ~EVENT_READ
 
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def _write_record_and_flush (self, record):
-        """
-        Utility method to write a method and immediately flush the data stream afterwards.
-
-        @param record (_Record) The record to write.
-        """
-
-        self._write_record(record)
-        self.flush()
-
-    # ------------------------------------------------------------------------------------------------------------------
-
-    def handle_write_finished (self):
-        """
-        Callback invoked when the full client write buffer has actually been written to the client's stream. Clears all
-        further events if the client is no longer reading.
-        """
-
-        # if we're no longer reading events, and we just flushed the write buffer, then clear all events so the socket
-        # shuts down
-        if self._events & EVENT_READ == 0:
-            self.clear_events()
-
 # ----------------------------------------------------------------------------------------------------------------------
 
 class FastcgiServer (Server):
@@ -794,4 +766,4 @@ class FastcgiServer (Server):
             return
 
         client._write_record(_StreamRecord(FCGI_STDERR, "Could not process request: Internal error", client.request_id))
-        client._write_record_and_flush(_EndRequestRecord(1, FCGI_REQUEST_COMPLETE, client.request_id))
+        client._write_record(_EndRequestRecord(1, FCGI_REQUEST_COMPLETE, client.request_id))
