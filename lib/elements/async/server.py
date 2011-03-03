@@ -632,7 +632,6 @@ class Server:
         while not is_shutting_down or is_graceful_shutdown:
             now = time()
 
-            print is_shutting_down, is_graceful_shutdown
             try:
                 if now - 1 > shutdown_check:
                     # check shutdown status and for exiting worker processes
