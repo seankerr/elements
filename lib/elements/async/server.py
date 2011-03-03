@@ -331,6 +331,12 @@ class Server:
             if code in (signal.SIGHUP, signal.SIGTERM):
                 return
 
+        if self._is_shutting_down:
+            # a second ctrl+c was sent, let's forcefully shutdown
+            self._is_graceful_shutdown = False
+
+            return
+
         self._is_shutting_down = True
 
         if code in (signal.SIGHUP, signal.SIGTERM):
