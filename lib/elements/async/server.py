@@ -337,10 +337,8 @@ class Server:
 
             return
 
-        self._is_shutting_down = True
-
-        if code in (signal.SIGHUP, signal.SIGTERM):
-            self._is_graceful_shutdown = True
+        self._is_graceful_shutdown = True
+        self._is_shutting_down     = True
 
         return
 
@@ -631,18 +629,18 @@ class Server:
             self.handle_init()
 
         # loop until the server is going to shutdown
-        while not is_shutting_down or not is_graceful_shutdown:
+        while not is_shutting_down or is_graceful_shutdown:
             now = time()
 
+            print is_shutting_down, is_graceful_shutdown
             try:
                 if now - 1 > shutdown_check:
                     # check shutdown status and for exiting worker processes
-                    is_shutting_down = self._is_shutting_down
-                    shutdown_check   = now
+                    is_graceful_shutdown = self._is_graceful_shutdown
+                    is_shutting_down     = self._is_shutting_down
+                    shutdown_check       = now
 
                     if is_shutting_down:
-                        is_graceful_shutdown = self._is_graceful_shutdown
-
                         if self._is_listening:
                             self.listen(False)
 
