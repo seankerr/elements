@@ -125,6 +125,26 @@ def init ():
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+def reinit ():
+    """
+    Reinitialize database connection pools.
+    """
+
+    if not DatabaseModel._POOL_INIT_:
+        init()
+
+        return
+
+    for name in settings.databases.keys():
+        if "instance" in settings.databases[name]:
+            del settings.databases[name]["instance"]
+
+    DatabaseModel._POOL_INIT_ = False
+
+    init()
+
+# ----------------------------------------------------------------------------------------------------------------------
+
 class DatabaseModelMetaclass (type):
 
     def __init__ (cls, name, bases, members):
