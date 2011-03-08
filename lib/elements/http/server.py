@@ -895,7 +895,7 @@ class HttpClient (Client):
         buffer.truncate(0)
 
         Client.write(self, "".join((hex(len(data))[2:], "\r\n", data, "\r\n")))
-        Client.write(self, "0\r\n\r\n\r\n")
+        Client.write(self, "0\r\n")
 
     # ------------------------------------------------------------------------------------------------------------------
 
