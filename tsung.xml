@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE tsung SYSTEM "/usr/share/tsung/tsung-1.0.dtd" []>
+<tsung loglevel="warning">
+
+    <clients>
+        <client host="localhost" use_controller_vm="false" maxusers="800"/>
+    </clients>
+
+    <servers>
+        <server host="localhost" port="8080" type="tcp"/>
+    </servers>
+
+    <monitoring>
+        <monitor host="localhost" type="erlang"/>
+    </monitoring>
+
+    <load>
+        <arrivalphase phase="1" duration="5" unit="minute">
+            <users interarrival="0.002" unit="second"/>
+        </arrivalphase>
+    </load>
+
+    <sessions>
+        <session name="elements-test" probability="100"  type="ts_http">
+            <for from="0" to="10" incr="1" var="counter">
+                <request>
+                    <http url="/" version="1.1" method="GET"/>
+                </request>
+                <thinktime random="false" value="5"/>
+            </for>
+        </session>
+    </sessions>
+
+</tsung>
