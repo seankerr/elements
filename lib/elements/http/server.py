@@ -213,7 +213,7 @@ class HttpClient (Client):
 
             # parse headers
             for header in data.rstrip().split("\r\n"):
-                header = header.split(": ")
+                header = header.split(": ", 1)
 
                 in_headers["HTTP_" + header[0].upper().replace("-", "_")] = header[1]
 
