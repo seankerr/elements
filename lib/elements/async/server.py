@@ -410,7 +410,7 @@ class Server:
         @param status (bool) The listening status.
         """
 
-        if self._is_listening == status:
+        if self._is_listening == status or len(self._hosts) == 0:
             return
 
         if status:
@@ -830,7 +830,8 @@ class Server:
 
         self._hosts.remove(host)
 
-        self.listen(True)
+        if len(self._hosts) > 0:
+            self.listen(True)
 
     # ------------------------------------------------------------------------------------------------------------------
 
