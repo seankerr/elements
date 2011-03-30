@@ -197,6 +197,8 @@ class Server:
 
         @param ip   (str) A hostname or ip address.
         @param port (int) The port.
+
+        @return (HostClient) The HostClient instance.
         """
 
         try:
@@ -209,7 +211,11 @@ class Server:
             host.bind((ip, port))
             host.listen(socket.SOMAXCONN)
 
-            self._hosts.append(HostClient(host, (ip, port), self))
+            client = HostClient(host, (ip, port), self)
+
+            self._hosts.append(client)
+
+            return client
 
         except socket.error, e:
             raise HostException("Cannot add host on ip '%s' port '%d': %s" % (ip, port, e[1]))
