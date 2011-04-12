@@ -145,21 +145,6 @@ class Server:
             except Exception, e:
                 raise ServerException("Cannot set umask to '%s': %s" % (umask, e))
 
-        # daemonize
-        if daemonize:
-            if not hasattr(os, "fork"):
-                raise ServerException("Cannot daemonize, because this platform does not support forking")
-
-            if os.fork():
-                os._exit(0)
-
-            os.setsid()
-
-            if os.fork():
-                os._exit(0)
-
-            self.handle_post_daemonize()
-
         # initialize the event manager methods and events
         self._event_manager            = self._event_manager(self)
         self._event_manager_modify     = self._event_manager.modify
@@ -180,6 +165,21 @@ class Server:
         if hosts:
             for host in hosts:
                 self.add_host(*host)
+
+        # daemonize
+        if daemonize:
+            if not hasattr(os, "fork"):
+                raise ServerException("Cannot daemonize, because this platform does not support forking")
+
+            if os.fork():
+                os._exit(0)
+
+            os.setsid()
+
+            if os.fork():
+                os._exit(0)
+
+            self.handle_post_daemonize()
 
         # register signal handlers
         if platform.system() != "Windows":
