@@ -231,8 +231,6 @@ class TestHttpAction (HttpAction):
         @param client (HttpClient) The HttpClient instance.
         """
 
-        client.allow_persistence(True)
-
         import pprint
 
         pprint = pprint.PrettyPrinter(indent=4)
