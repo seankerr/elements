@@ -103,6 +103,58 @@ class Server:
         else:
             raise ServerException("Could not find a suitable event manager for your platform")
 
+        # change directory
+        if chroot:
+            try:
+                os.chroot(chroot)
+
+            except Exception, e:
+                raise ServerException("Cannot change directory to '%s': %s" % (chroot, e))
+
+        # change umask
+        if umask is not None:
+            try:
+                os.umask(umask)
+
+            except Exception, e:
+                raise ServerException("Cannot set umask to '%s': %s" % (umask, e))
+
+        # daemonize
+        if daemonize:
+            if not hasattr(os, "fork"):
+                raise ServerException("Cannot daemonize, because this platform does not support forking")
+
+            if os.fork():
+                os._exit(0)
+
+            os.setsid()
+
+            if os.fork():
+                os._exit(0)
+
+            self.handle_post_daemonize()
+
+        # initialize the event manager methods and events
+        self._event_manager            = self._event_manager(self)
+        self._event_manager_modify     = self._event_manager.modify
+        self._event_manager_poll       = self._event_manager.poll
+        self._event_manager_register   = self._event_manager.register
+        self._event_manager_unregister = self._event_manager.unregister
+
+        # update this server with the proper events
+        self.EVENT_READ   = self._event_manager.EVENT_READ
+        self.EVENT_WRITE  = self._event_manager.EVENT_WRITE
+
+        # update the client module with the proper events
+        client.EVENT_LINGER = self._event_manager.EVENT_LINGER
+        client.EVENT_READ   = self._event_manager.EVENT_READ
+        client.EVENT_WRITE  = self._event_manager.EVENT_WRITE
+
+        # add all hosts
+        if hosts:
+            for host in hosts:
+                self.add_host(*host)
+
         # change group
         if group:
             try:
@@ -128,58 +180,6 @@ class Server:
 
             except Exception, e:
                 raise ServerException("Cannot set user to '%s': %s" % (user, e))
-
-        # change directory
-        if chroot:
-            try:
-                os.chroot(chroot)
-
-            except Exception, e:
-                raise ServerException("Cannot change directory to '%s': %s" % (chroot, e))
-
-        # change umask
-        if umask is not None:
-            try:
-                os.umask(umask)
-
-            except Exception, e:
-                raise ServerException("Cannot set umask to '%s': %s" % (umask, e))
-
-        # initialize the event manager methods and events
-        self._event_manager            = self._event_manager(self)
-        self._event_manager_modify     = self._event_manager.modify
-        self._event_manager_poll       = self._event_manager.poll
-        self._event_manager_register   = self._event_manager.register
-        self._event_manager_unregister = self._event_manager.unregister
-
-        # update this server with the proper events
-        self.EVENT_READ   = self._event_manager.EVENT_READ
-        self.EVENT_WRITE  = self._event_manager.EVENT_WRITE
-
-        # update the client module with the proper events
-        client.EVENT_LINGER = self._event_manager.EVENT_LINGER
-        client.EVENT_READ   = self._event_manager.EVENT_READ
-        client.EVENT_WRITE  = self._event_manager.EVENT_WRITE
-
-        # add all hosts
-        if hosts:
-            for host in hosts:
-                self.add_host(*host)
-
-        # daemonize
-        if daemonize:
-            if not hasattr(os, "fork"):
-                raise ServerException("Cannot daemonize, because this platform does not support forking")
-
-            if os.fork():
-                os._exit(0)
-
-            os.setsid()
-
-            if os.fork():
-                os._exit(0)
-
-            self.handle_post_daemonize()
 
         # register signal handlers
         if platform.system() != "Windows":
